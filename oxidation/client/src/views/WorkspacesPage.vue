@@ -3,61 +3,100 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
-      <h4 class="ion-margin-start">
-        {{ $t('WorkspacesPage.documents') }}
-      </h4>
       <ion-item-divider class="workspace-toolbar ion-margin-bottom secondary">
         <ion-button
+          class="add-workspace-button"
           v-if="!isPlatform('mobile')"
           fill="clear"
           @click="openCreateWorkspaceModal()"
         >
           <ion-icon
-            slot="icon-only"
-            :icon="add"
+            slot="start"
+            :icon="addCircle"
           />
-          <ion-label>{{ $t('WorkspacesPage.createWorkspace') }}</ion-label>
+          {{ $t('WorkspacesPage.createWorkspace') }}
         </ion-button>
-        <ion-button
-          fill="clear"
-          class="workspace-toolbar__change-view"
-          @click="listView = !listView"
-        >
-          <ion-icon
-            slot="icon-only"
-            :icon="listView ? grid : list"
+        <div class="button-view">
+          <ms-select
+            id="filter-select"
+            :options="msSelectOptions"
+            default-option="name"
+            @change="onMsSelectChange($event)"
           />
-        </ion-button>
+          <ion-button
+            fill="clear"
+            id="grid-view"
+            :disabled="!listView"
+            @click="listView = !listView"
+          >
+            <ion-icon
+              :icon="grid"
+            />
+            <span v-if="!listView">
+              {{ $t('WorkspacesPage.viewDisplay.grid') }}
+            </span>
+          </ion-button>
+          <ion-button
+            fill="clear"
+            id="list-view"
+            :disabled="listView"
+            @click="listView = !listView"
+          >
+            <ion-icon
+              :icon="list"
+            />
+            <span v-if="listView">
+              {{ $t('WorkspacesPage.viewDisplay.list') }}
+            </span>
+          </ion-button>
+        </div>
       </ion-item-divider>
-
-      <div v-if="listView">
-        <mobile-item-list
-          v-for="workspace in workspacesExampleData"
-          :item-type="'workspace'"
-          :primary-label="workspace.name"
-          :secondary-label="workspace.userRole"
-          :third-label="userCountLabel(workspace.userCount)"
-          :key="workspace.id"
-          @contextmenu.prevent="openWorkspaceActionSheet()"
-          @trigger-action-sheet="openWorkspaceActionSheet()"
-          @trigger-share="openWorkspaceShareModal()"
-        />
+      <div class="workspaces-container">
+        <div v-if="listView">
+          <ion-list>
+            <ion-list-header
+              class="workspace-list-header"
+              lines="full"
+            >
+              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.name') }}</ion-label>
+              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.role') }}</ion-label>
+              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.sharedWith') }}</ion-label>
+              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.lastUpdate') }}</ion-label>
+              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.size') }}</ion-label>
+            </ion-list-header>
+            <workspace-list-item
+              v-for="workspace in filteredWorkspaces"
+              :key="workspace.id"
+              :workspace="workspace"
+              @click="onWorkspaceClick"
+              @menu-click="openWorkspaceContextMenu"
+              @share-click="onWorkspaceShareClick"
+            />
+          </ion-list>
+        </div>
+        <div
+          v-else
+          class="workspaces-grid-container"
+        >
+          <ion-grid class="workspaces-list-grid">
+            <ion-row>
+              <ion-col
+                v-for="workspace in filteredWorkspaces"
+                :key="workspace.id"
+              >
+                <workspace-card
+                  :workspace="workspace"
+                  @click="onWorkspaceClick"
+                  @menu-click="openWorkspaceContextMenu"
+                  @share-click="onWorkspaceShareClick"
+                />
+              </ion-col>
+            </ion-row>
+          </ion-grid>
+        </div>
       </div>
-      <div
-        v-else
-        class="workspaces-grid-container"
-      >
-        <item-grid
-          v-for="workspace in workspacesExampleData"
-          :item-type="'workspace'"
-          :primary-label="workspace.name"
-          :secondary-label="workspace.userRole"
-          :key="workspace.id"
-          @contextmenu.prevent="handleContextMenu($event)"
-          @trigger-context-menu="openWorkspaceContextMenu($event)"
-          @trigger-action-sheet="openWorkspaceActionSheet()"
-          @trigger-share="openWorkspaceShareModal()"
-        />
+      <div class="workspaces-footer">
+        {{ $t('WorkspacesPage.itemCount', { count: workspaceList.length }, workspaceList.length) }}
       </div>
       <ion-fab
         v-if="isPlatform('mobile')"
@@ -66,7 +105,7 @@
         slot="fixed"
       >
         <ion-fab-button @click="openCreateWorkspaceModal()">
-          <ion-icon :icon="add" />
+          <ion-icon :icon="addCircle" />
         </ion-fab-button>
       </ion-fab>
     </ion-content>
@@ -82,26 +121,64 @@ import {
   IonItemDivider,
   IonContent,
   popoverController,
-  actionSheetController,
   isPlatform,
   IonFab,
   IonFabButton,
-  modalController
+  IonGrid,
+  IonCol,
+  IonRow,
+  modalController,
+  IonList,
+  IonListHeader
 } from '@ionic/vue';
 
 import {
-  add, grid, list, close, shareSocial, time
+  addCircle, grid, list
 } from 'ionicons/icons';
-import ItemGrid from '@/components/ItemGrid.vue';
-import MobileItemList from '@/components/MobileItemList.vue';
+import WorkspaceCard from '@/components/WorkspaceCard.vue';
+import WorkspaceListItem from '@/components/WorkspaceListItem.vue';
+import { MockWorkspace, getMockWorkspaces } from '@/common/mocks';
 import WorkspaceContextMenu from '@/components/WorkspaceContextMenu.vue';
+import { WorkspaceAction } from '@/components/WorkspaceContextMenu.vue';
 import CreateWorkspaceModal from '@/components/CreateWorkspaceModal.vue';
 import WorkspaceShareModal from '@/components/WorkspaceShareModal.vue';
+import MsSelect from '@/components/MsSelect.vue';
+import { MsSelectChangeEvent, MsSelectOption } from '@/components/MsSelectOption';
 import { useI18n } from 'vue-i18n';
-import { ref } from 'vue';
+import { ref, Ref, onMounted, computed } from 'vue';
 
 const { t } = useI18n();
 const listView = ref(false);
+const sortBy = ref('name');
+const workspaceList: Ref<MockWorkspace[]> = ref([]);
+
+onMounted(async (): Promise<void> => {
+  workspaceList.value = await getMockWorkspaces();
+});
+
+const filteredWorkspaces = computed(() => {
+  // Copy to avoid updating the workspaceList itself
+  return Array.from(workspaceList.value).sort((a: MockWorkspace, b: MockWorkspace) => {
+    if (sortBy.value === 'name') {
+      return a.name.localeCompare(b.name);
+    } else if (sortBy.value === 'size') {
+      return a.size - b.size;
+    } else if (sortBy.value === 'lastUpdated') {
+      return b.lastUpdate.diff(a.lastUpdate).milliseconds;
+    }
+    return 0;
+  });
+});
+
+const msSelectOptions: MsSelectOption[] = [
+  { label: t('WorkspacesPage.sort.sortByName'), key: 'name' },
+  { label: t('WorkspacesPage.sort.sortBySize'), key: 'size' },
+  { label: t('WorkspacesPage.sort.sortByLastUpdated'), key: 'lastUpdated' }
+];
+
+function onMsSelectChange(event: MsSelectChangeEvent): void {
+  sortBy.value = event.option.key;
+}
 
 async function openCreateWorkspaceModal(): Promise<void> {
   const modal = await modalController.create({
@@ -117,99 +194,38 @@ async function openCreateWorkspaceModal(): Promise<void> {
   }
 }
 
-const workspacesExampleData = [
-  {
-    'id': 1234,
-    'name': 'Product Design',
-    'userRole': 'Owner',
-    'userCount': 3
-  },
-  {
-    'id': 2345,
-    'name': 'Marketing',
-    'userRole': 'Contributor',
-    'userCount': 1
-  },
-  {
-    'id': 3456,
-    'name': 'Engineering',
-    'userRole': 'Contributor',
-    'userCount': 4
-  },
-  {
-    'id': 4567,
-    'name': 'Research',
-    'userRole': 'Reader',
-    'userCount': 3
-  }
-];
-
-function userCountLabel(userCount: number): string {
-  return userCount > 1 ? `${userCount} ${t('WorkspacesPage.user')}s` : `${userCount} ${t('WorkspacesPage.user')}`;
+function onWorkspaceClick(_: Event, workspace: MockWorkspace): void {
+  console.log('Workspace Clicked!', workspace.name);
 }
 
-function handleContextMenu(ev: Event): void {
-  if (isPlatform('mobile')) { // @contextmenu event is triggered by a long press on mobile
-    openWorkspaceActionSheet();
-  } else {
-    openWorkspaceContextMenu(ev);
-  }
+function onWorkspaceShareClick(_: Event, workspace: MockWorkspace): void {
+  console.log('Share workspace Clicked!', workspace.name);
 }
 
-async function openWorkspaceContextMenu(ev: Event): Promise<void> {
+async function openWorkspaceContextMenu(event: Event, workspace: MockWorkspace): Promise<void> {
   const popover = await popoverController
     .create({
       component: WorkspaceContextMenu,
-      event: ev,
+      event: event,
       translucent: true,
       showBackdrop: false,
       dismissOnSelect: true,
       reference: 'event'
-      /* componentProps: {
-        dataTest: 'context menu data test'
-      } */
     });
   await popover.present();
 
-  const { role } = await popover.onDidDismiss();
-  console.log('onDidDismiss resolved with role', role);
-  if (role==='share') {
-    openWorkspaceShareModal();
-  }
-}
+  const { data } = await popover.onDidDismiss();
+  if (data !== undefined) {
+    console.log(data.action);
+    /*
+    Keeping the comment here juste to show how to check
+    what action was selected.
 
-async function openWorkspaceActionSheet(): Promise<void> {
-  const actionSheet = await actionSheetController
-    .create({
-      header: 'Workspace name',
-      buttons: [
-        {
-          text: t('WorkspacesPage.workspaceContextMenu.share'),
-          icon: shareSocial,
-          handler: () :void => {
-            openWorkspaceShareModal();
-          }
-        },
-        {
-          text: t('WorkspacesPage.workspaceContextMenu.history'),
-          icon: time,
-          handler: ():void => {
-            console.log('History clicked');
-          }
-        },
-        {
-          text: t('WorkspacesPage.workspaceContextMenu.cancel'),
-          icon: close,
-          role: 'cancel',
-          handler: ():void => {
-            console.log('Cancel clicked');
-          }
-        }
-      ]
-    });
-  await actionSheet.present();
-  const { role, data } = await actionSheet.onDidDismiss();
-  console.log('onDidDismiss resolved with role and data: ', role, data);
+    if (data.action === WorkspaceAction.Rename) {
+      console.log('Rename!');
+    }
+    */
+  }
 }
 
 async function openWorkspaceShareModal(): Promise<void> {
@@ -227,17 +243,47 @@ async function openWorkspaceShareModal(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
+
+.workspaces-container {
+  margin: 2em;
+  background-color: white;
+}
+
+.workspace-list-header {
+  color: var(--parsec-color-light-secondary-grey);
+  font-weight: 600;
+}
+
+.workspaces-footer {
+  width: 100%;
+  left: 0;
+  position: fixed;
+  bottom: 0;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--parsec-color-light-secondary-text);
+  margin-bottom: 2em;
+}
 .workspaces-grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  overflow-y: auto;
 }
 
 .workspace-toolbar {
-    --padding-start: 0px;
+  --padding-start: 0px;
+  padding: 1em;
+  height: 6em;
+  background-color: var(--parsec-color-light-secondary-background);
 }
 
-.workspace-toolbar__change-view {
-    margin-left: auto;
+.button-view {
+  margin-left: auto;
+}
+
+.add-workspace-button {
+  color: var(--parsec-color-light-secondary-grey);
+  font-size: 16px;
 }
 
 </style>

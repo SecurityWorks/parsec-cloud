@@ -6,6 +6,7 @@ import { StorageManager } from '@/services/storageManager';
 
 export interface Formatters {
   timeSince(date: DateTime | undefined, defaultValue?: string): string;
+  fileSize(bytes: number): string;
 }
 
 const FormattersKey = Symbol('formatters') as InjectionKey<Formatters>;
