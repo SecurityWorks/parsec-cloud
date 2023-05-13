@@ -3,7 +3,7 @@
 <template>
   <div class="container">
     <ion-avatar
-      class="avatar person-avatar"
+      class="avatar person-avatar body-sm"
       v-for="person in people.slice(0, maxDisplay)"
       :key="person"
     >
@@ -31,18 +31,23 @@ defineProps<{
 .container {
   display: flex;
   flex-wrap: nowrap;
-}
+  background: var(--parsec-color-light-secondary-inversed-contrast);
+  border-radius: 32px;
 
-.avatar {
-  text-align: center;
-  padding-top: 0.6em;
-  font-size: 1.1em;
-  font-weight: bold;
-  text-transform: uppercase;
-  margin-left: -0.6em;
-  height: 2.5em;
-  width: 2.5em;
-  border: 1px solid #FEFEFE;
+  .avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    margin-left: -0.6em;
+    height: 2rem;
+    width: 2rem;
+    border: 1px solid var(--parsec-color-light-secondary-inversed-contrast);
+
+    &:first-of-type{
+      margin-left: 0;
+    }
+  }
 }
 
 .person-avatar {

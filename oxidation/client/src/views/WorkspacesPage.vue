@@ -3,19 +3,13 @@
 <template>
   <ion-page>
     <ion-content :fullscreen="true">
+      <!-- contextual menu -->
       <ion-item-divider class="workspace-toolbar ion-margin-bottom secondary">
-        <ion-button
-          class="add-workspace-button"
-          v-if="!isPlatform('mobile')"
-          fill="clear"
+        <button-option
+          :button-label="$t('WorkspacesPage.createWorkspace')"
+          :icon="addCircle"
           @click="openCreateWorkspaceModal()"
-        >
-          <ion-icon
-            slot="start"
-            :icon="addCircle"
-          />
-          {{ $t('WorkspacesPage.createWorkspace') }}
-        </ion-button>
+        />
         <div class="button-view">
           <ms-select
             id="filter-select"
@@ -23,6 +17,7 @@
             default-option="name"
             @change="onMsSelectChange($event)"
           />
+          <!-- grid -->
           <ion-button
             fill="clear"
             id="grid-view"
@@ -36,6 +31,7 @@
               {{ $t('WorkspacesPage.viewDisplay.grid') }}
             </span>
           </ion-button>
+          <!-- list -->
           <ion-button
             fill="clear"
             id="list-view"
@@ -51,6 +47,7 @@
           </ion-button>
         </div>
       </ion-item-divider>
+      <!-- workspaces -->
       <div class="workspaces-container">
         <div v-if="listView">
           <ion-list>
@@ -78,21 +75,18 @@
           v-else
           class="workspaces-grid-container"
         >
-          <ion-grid class="workspaces-list-grid">
-            <ion-row>
-              <ion-col
-                v-for="workspace in filteredWorkspaces"
-                :key="workspace.id"
-              >
-                <workspace-card
-                  :workspace="workspace"
-                  @click="onWorkspaceClick"
-                  @menu-click="openWorkspaceContextMenu"
-                  @share-click="onWorkspaceShareClick"
-                />
-              </ion-col>
-            </ion-row>
-          </ion-grid>
+          <ion-item
+            class="workspaces-list-grid"
+            v-for="workspace in filteredWorkspaces"
+            :key="workspace.id"
+          >
+            <workspace-card
+              :workspace="workspace"
+              @click="onWorkspaceClick"
+              @menu-click="openWorkspaceContextMenu"
+              @share-click="onWorkspaceShareClick"
+            />
+          </ion-item>
         </div>
       </div>
       <div class="workspaces-footer">
@@ -143,6 +137,7 @@ import { WorkspaceAction } from '@/components/WorkspaceContextMenu.vue';
 import CreateWorkspaceModal from '@/components/CreateWorkspaceModal.vue';
 import WorkspaceShareModal from '@/components/WorkspaceShareModal.vue';
 import MsSelect from '@/components/MsSelect.vue';
+import ButtonOption from '@/components/ButtonOption.vue';
 import { MsSelectChangeEvent, MsSelectOption } from '@/components/MsSelectOption';
 import { useI18n } from 'vue-i18n';
 import { ref, Ref, onMounted, computed } from 'vue';
@@ -218,7 +213,7 @@ async function openWorkspaceContextMenu(event: Event, workspace: MockWorkspace):
   if (data !== undefined) {
     console.log(data.action);
     /*
-    Keeping the comment here juste to show how to check
+    Keeping the comment here just to show how to check
     what action was selected.
 
     if (data.action === WorkspaceAction.Rename) {
@@ -260,21 +255,23 @@ async function openWorkspaceShareModal(): Promise<void> {
   position: fixed;
   bottom: 0;
   text-align: center;
-  font-size: 16px;
   font-weight: 600;
   color: var(--parsec-color-light-secondary-text);
   margin-bottom: 2em;
 }
 .workspaces-grid-container {
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  // grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5em;
   overflow-y: auto;
 }
 
 .workspace-toolbar {
-  --padding-start: 0px;
-  padding: 1em;
+  padding: 1em 2em;
   height: 6em;
   background-color: var(--parsec-color-light-secondary-background);
+  border-top: 1px solid var(--parsec-color-light-secondary-light);
 }
 
 .button-view {
@@ -283,7 +280,6 @@ async function openWorkspaceShareModal(): Promise<void> {
 
 .add-workspace-button {
   color: var(--parsec-color-light-secondary-grey);
-  font-size: 16px;
 }
 
 </style>

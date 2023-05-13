@@ -2,24 +2,23 @@
 
 <template>
   <div
-    class="workspace-card"
+    class="card"
     @click="$emit('click', $event, workspace)"
   >
-    <ion-button
-      fill="clear"
-      class="button-open-menu"
+    <div
+      class="card-option"
       @click.stop="$emit('menuClick', $event, workspace)"
     >
       <ion-icon
         :icon="ellipsisHorizontal"
       />
-    </ion-button>
+    </div>
     <div
-      class="workspace-card-inner"
+      class="card-content"
     >
-      <ion-avatar class="workspace-icon">
+      <ion-avatar class="card-content-icons">
         <ion-icon
-          class="main-icon"
+          class="card-content-icons__item"
           :icon="business"
         />
         <ion-icon
@@ -29,36 +28,26 @@
         />
       </ion-avatar>
 
-      <ion-item
-        class="workspace-label"
-      >
-        <ion-label>
-          {{ workspace.name }}
-        </ion-label>
-      </ion-item>
+      <ion-title class="card-content__title body-lg">
+        {{ workspace.name }}
+      </ion-title>
 
-      <ion-item
-        lines="full"
-        class="workspace-time-since"
-      >
-        <ion-label>
-          {{ $t('WorkspacesPage.Workspace.lastUpdate') }}
-          <br />
-          {{ timeSince(workspace.lastUpdate, '--', 'short') }}
-        </ion-label>
-      </ion-item>
+      <ion-text class="card-content-last-update caption-caption">
+        <span>{{ $t('WorkspacesPage.Workspace.lastUpdate') }}</span>
+        <span>{{ timeSince(workspace.lastUpdate, '--', 'short') }}</span>
+      </ion-text>
 
-      <ion-item class="workspace-info">
-        <ion-label class="label-file-size">
+      <div class="workspace-info">
+        <ion-text class="label-file-size body-sm">
           {{ fileSize(workspace.size) }}
-        </ion-label>
+        </ion-text>
         <avatar-group
           class="shared-group"
           :people="workspace.sharedWith"
           :max-display="2"
           @click.stop="$emit('shareClick', $event, workspace)"
         />
-      </ion-item>
+      </div>
     </div>
   </div>
 </template>
@@ -91,46 +80,54 @@ const { timeSince, fileSize } = inject(formattersKey)!;
 </script>
 
 <style lang="scss" scoped>
-.workspace-card {
-  min-height: 15em;
-  width: 15em;
-  padding: 1em;
+
+.card {
+  padding: 2rem 1em 1em;
   cursor: pointer;
   text-align: center;
   background-color: var(--parsec-color-light-secondary-background);
   user-select: none;
+  position: relative;
+  border-radius: 8px;
+  width: 15rem;
+}
 
-  ion-avatar {
-    color: var(--parsec-color-light-primary-900);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: auto;
-    width: 100%;
+.card-option {
+  color: var(--parsec-color-light-secondary-grey);
+  text-align: right;
+  position: absolute;
+  display: flex;
+  align-items: center;
+
+  top: 0;
+  right: 0;
+  font-size: 1.5rem;
+  padding: .75rem;
+
+  &:hover{
+    color: var(--parsec-color-light-primary-500);
   }
 }
 
-.button-open-menu {
-  color: var(--parsec-color-light-secondary-grey);
-  text-align: right;
+.card-content-icons {
+  margin:0 auto .5rem;
   position: relative;
-  float: right;
-}
+  height: fit-content;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--parsec-color-light-primary-900);
+  width: 100%;
 
-.workspace-icon {
-  position: relative;
-  padding: 5px;
-
-  .main-icon {
-    height: 100%;
-    width: 100%;
+  &__item {
+    font-size: 2.5rem;
   }
 
   .cloud-overlay {
     position: absolute;
-    font-size: 1.5rem;
-    bottom: -3px;
-    left: 55%;
+    font-size: 1.25rem;
+    bottom: -10px;
+    left: 54%;
     padding: 2px;
     background: white;
     border-radius: 50%;
@@ -145,37 +142,42 @@ const { timeSince, fileSize } = inject(formattersKey)!;
   }
 }
 
-.workspace-label {
+.card-content__title {
   color: var(--parsec-color-light-primary-900);
   background-color: var(--parsec-color-light-secondary-background);
   font-size: 18px;
   text-align: center;
+
+  ion-text {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
-.workspace-time-since {
-  font-size: 14px;
+.card-content-last-update {
   color: var(--parsec-color-light-secondary-grey);
-  background-color: var(--parsec-color-light-secondary-background);
   text-align: center;
+  margin: .5rem 0 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
 
 .workspace-info {
-  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  padding: .625rem 0;
+  align-items: center;
   color: var(--parsec-color-light-secondary-grey);
   background-color: var(--parsec-color-light-secondary-background);
+  border-top: 1px solid var(--parsec-color-light-secondary-disabled);
 }
 
 /* No idea how to change the color of the ion-item */
-.workspace-label::part(native), .workspace-info::part(native), .workspace-time-since::part(native) {
+.card-content__title::part(native), .workspace-info::part(native), .card-content-last-update::part(native) {
   background-color: var(--parsec-color-light-secondary-background);
-}
-
-.label-file-size {
-  display: block;
-  float: left;
-}
-
-.shared-group {
-  float: right;
 }
 </style>
