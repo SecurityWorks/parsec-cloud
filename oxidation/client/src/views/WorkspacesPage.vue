@@ -123,7 +123,8 @@ import {
   IonRow,
   modalController,
   IonList,
-  IonListHeader
+  IonListHeader,
+  IonItem
 } from '@ionic/vue';
 
 import {

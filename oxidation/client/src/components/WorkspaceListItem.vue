@@ -63,7 +63,7 @@ import {
 } from 'ionicons/icons';
 import { ref, inject } from 'vue';
 import { IonIcon, IonButton, IonItem, IonLabel, IonChip, IonAvatar } from '@ionic/vue';
-import { formattersKey } from '../main';
+import { FormattersKey } from '@/common/injectionKeys';
 import { MockWorkspace } from '@/common/mocks';
 import AvatarGroup from '@/components/AvatarGroup.vue';
 
@@ -79,7 +79,7 @@ defineEmits<{
   (e: 'shareClick', event: Event, workspace: MockWorkspace): void
 }>();
 
-const { timeSince, fileSize } = inject(formattersKey)!;
+const { timeSince, fileSize } = inject(FormattersKey)!;
 
 </script>
 

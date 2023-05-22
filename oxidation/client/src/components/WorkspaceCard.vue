@@ -59,9 +59,9 @@ import {
   cloudDone,
   cloudOffline
 } from 'ionicons/icons';
-import { IonAvatar, IonIcon, IonButton, IonItem, IonLabel } from '@ionic/vue';
+import { IonAvatar, IonIcon, IonButton, IonItem, IonLabel, IonText, IonTitle } from '@ionic/vue';
 import { inject } from 'vue';
-import { formattersKey } from '../main';
+import { FormattersKey } from '@/common/injectionKeys';
 import { MockWorkspace } from '@/common/mocks';
 import AvatarGroup from '@/components/AvatarGroup.vue';
 
@@ -75,7 +75,7 @@ defineEmits<{
   (e: 'shareClick', event: Event, workspace: MockWorkspace): void
 }>();
 
-const { timeSince, fileSize } = inject(formattersKey)!;
+const { timeSince, fileSize } = inject(FormattersKey)!;
 
 </script>
 
