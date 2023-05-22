@@ -87,9 +87,13 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   text-align: center;
   background-color: var(--parsec-color-light-secondary-background);
   user-select: none;
-  position: relative;
   border-radius: 8px;
-  width: 15rem;
+  width: 16rem;
+
+  &:hover {
+    background-color: var(--parsec-color-light-primary-30);
+    // box-shadow: var(--parsec-shadow-light);
+  }
 }
 
 .card-option {
@@ -98,9 +102,8 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   position: absolute;
   display: flex;
   align-items: center;
-
   top: 0;
-  right: 0;
+  right: 1rem;
   font-size: 1.5rem;
   padding: .75rem;
 
@@ -144,7 +147,6 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
 
 .card-content__title {
   color: var(--parsec-color-light-primary-900);
-  background-color: var(--parsec-color-light-secondary-background);
   font-size: 18px;
   text-align: center;
 
@@ -172,7 +174,6 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   padding: .625rem 0;
   align-items: center;
   color: var(--parsec-color-light-secondary-grey);
-  background-color: var(--parsec-color-light-secondary-background);
   border-top: 1px solid var(--parsec-color-light-secondary-disabled);
 }
 
