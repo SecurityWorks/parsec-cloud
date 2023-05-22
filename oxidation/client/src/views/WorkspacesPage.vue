@@ -10,41 +10,16 @@
           :icon="addCircle"
           @click="openCreateWorkspaceModal()"
         />
-        <div class="button-view">
+        <div class="rightSide">
           <ms-select
             id="filter-select"
             :options="msSelectOptions"
             default-option="name"
             @change="onMsSelectChange($event)"
           />
-          <!-- grid -->
-          <ion-button
-            fill="clear"
-            id="grid-view"
-            :disabled="!listView"
-            @click="listView = !listView"
-          >
-            <ion-icon
-              :icon="grid"
-            />
-            <span v-if="!listView">
-              {{ $t('WorkspacesPage.viewDisplay.grid') }}
-            </span>
-          </ion-button>
-          <!-- list -->
-          <ion-button
-            fill="clear"
-            id="list-view"
-            :disabled="listView"
-            @click="listView = !listView"
-          >
-            <ion-icon
-              :icon="list"
-            />
-            <span v-if="listView">
-              {{ $t('WorkspacesPage.viewDisplay.list') }}
-            </span>
-          </ion-button>
+          <list-grid-toggle
+            @toggle-view="onToggleView($event)"
+          />
         </div>
       </ion-item-divider>
       <!-- workspaces -->
@@ -73,7 +48,7 @@
         </div>
         <div
           v-else
-          class="workspaces-grid-container"
+          class="workspaces-container-grid"
         >
           <ion-item
             class="workspaces-list-grid"
@@ -118,9 +93,6 @@ import {
   isPlatform,
   IonFab,
   IonFabButton,
-  IonGrid,
-  IonCol,
-  IonRow,
   modalController,
   IonList,
   IonListHeader,
@@ -128,7 +100,7 @@ import {
 } from '@ionic/vue';
 
 import {
-  addCircle, grid, list
+  addCircle
 } from 'ionicons/icons';
 import WorkspaceCard from '@/components/WorkspaceCard.vue';
 import WorkspaceListItem from '@/components/WorkspaceListItem.vue';
@@ -140,13 +112,14 @@ import WorkspaceShareModal from '@/components/WorkspaceShareModal.vue';
 import MsSelect from '@/components/MsSelect.vue';
 import ButtonOption from '@/components/ButtonOption.vue';
 import { MsSelectChangeEvent, MsSelectOption } from '@/components/MsSelectOption';
+import ListGridToggle from '@/components/listGridToggle.vue';
 import { useI18n } from 'vue-i18n';
 import { ref, Ref, onMounted, computed } from 'vue';
 
 const { t } = useI18n();
-const listView = ref(false);
 const sortBy = ref('name');
 const workspaceList: Ref<MockWorkspace[]> = ref([]);
+const listView = ref(false);
 
 onMounted(async (): Promise<void> => {
   workspaceList.value = await getMockWorkspaces();
@@ -236,6 +209,10 @@ async function openWorkspaceShareModal(): Promise<void> {
     console.log(data);
   }
 }
+
+function onToggleView(value: boolean): void {
+  listView.value = value;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -260,12 +237,17 @@ async function openWorkspaceShareModal(): Promise<void> {
   color: var(--parsec-color-light-secondary-text);
   margin-bottom: 2em;
 }
-.workspaces-grid-container {
-  // grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+
+.workspaces-container-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5em;
   overflow-y: auto;
+
+}
+
+ion-item::part(native) {
+  --padding-start: 0px;
 }
 
 .workspace-toolbar {
@@ -275,12 +257,9 @@ async function openWorkspaceShareModal(): Promise<void> {
   border-top: 1px solid var(--parsec-color-light-secondary-light);
 }
 
-.button-view {
+.rightSide {
   margin-left: auto;
-}
-
-.add-workspace-button {
-  color: var(--parsec-color-light-secondary-grey);
+  display: flex;
 }
 
 </style>
