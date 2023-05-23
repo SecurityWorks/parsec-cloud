@@ -130,10 +130,12 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   height: 4rem;
 }
 
-.workspace-name{
+.workspace-name {
   padding: .75rem 1rem;
   width: 100%;
-  max-width: 20rem;
+  max-width: 20vw;
+  white-space: nowrap;
+  overflow: hidden;
 
   &__icons {
   position: relative;
@@ -145,7 +147,6 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
     }
 
     .cloud-overlay {
-
       height: 40%;
       width: 40%;
       position: absolute;
@@ -174,15 +175,18 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
 
 .workspace-role {
   min-width: 11.25rem;
+  max-width: 10vw;
   flex-grow: 2;
 }
 
 .workspace-users {
   min-width: 14.5rem;
+  flex-grow: 0;
 }
 
 .workspace-lastUpdate {
   min-width: 11.25rem;
+  flex-grow: 0;
 }
 
 .workspace-size {
@@ -191,6 +195,7 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
 
 .workspace-options {
   flex-grow: 0;
+  margin-left: auto;
 
   ion-button::part(native) {
     padding: 0;
