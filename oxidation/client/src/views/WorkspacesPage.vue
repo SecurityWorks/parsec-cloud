@@ -30,11 +30,22 @@
               class="workspace-list-header"
               lines="full"
             >
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.name') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.role') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.sharedWith') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.lastUpdate') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.size') }}</ion-label>
+              <ion-label class="workspace-list-header__label label-name">
+                {{ $t('WorkspacesPage.listDisplayTitles.name') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-role">
+                {{ $t('WorkspacesPage.listDisplayTitles.role') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-users">
+                {{ $t('WorkspacesPage.listDisplayTitles.sharedWith') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-update">
+                {{ $t('WorkspacesPage.listDisplayTitles.lastUpdate') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-size">
+                {{ $t('WorkspacesPage.listDisplayTitles.size') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-space"></ion-label>
             </ion-list-header>
             <workspace-list-item
               v-for="workspace in filteredWorkspaces"
@@ -225,6 +236,49 @@ function onToggleView(value: boolean): void {
 .workspace-list-header {
   color: var(--parsec-color-light-secondary-grey);
   font-weight: 600;
+  padding-inline-start:0;
+
+  &__label {
+    padding: 0 1rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .label-name {
+    width: 100%;
+    max-width: 20vw;
+    min-width: 11.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .label-role {
+    min-width: 11.25rem;
+    max-width: 10vw;
+    flex-grow: 2;
+  }
+
+  .label-users {
+    min-width: 14.5rem;
+    flex-grow: 0;
+  }
+
+  .label-update {
+    min-width: 11.25rem;
+    flex-grow: 0;
+  }
+
+  .label-size {
+    min-width: 7.5rem;
+  }
+
+  .label-space {
+    min-width: 4rem;
+    flex-grow: 0;
+    margin-left: auto;
+    margin-right: 1rem;
+  }
 }
 
 .workspaces-footer {
