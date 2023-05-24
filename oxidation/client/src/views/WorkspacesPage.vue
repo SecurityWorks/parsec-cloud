@@ -62,7 +62,7 @@
           class="workspaces-container-grid"
         >
           <ion-item
-            class="workspaces-list-grid"
+            class="workspaces-grid-item"
             v-for="workspace in filteredWorkspaces"
             :key="workspace.id"
           >
@@ -95,7 +95,6 @@
 <script setup lang = "ts" >
 import {
   IonLabel,
-  IonButton,
   IonIcon,
   IonPage,
   IonItemDivider,
@@ -119,7 +118,6 @@ import { MockWorkspace, getMockWorkspaces } from '@/common/mocks';
 import WorkspaceContextMenu from '@/components/WorkspaceContextMenu.vue';
 import { WorkspaceAction } from '@/components/WorkspaceContextMenu.vue';
 import CreateWorkspaceModal from '@/components/CreateWorkspaceModal.vue';
-import WorkspaceShareModal from '@/components/WorkspaceShareModal.vue';
 import MsSelect from '@/components/MsSelect.vue';
 import ButtonOption from '@/components/ButtonOption.vue';
 import { MsSelectChangeEvent, MsSelectOption } from '@/components/MsSelectOption';
@@ -205,19 +203,6 @@ async function openWorkspaceContextMenu(event: Event, workspace: MockWorkspace):
       console.log('Rename!');
     }
     */
-  }
-}
-
-async function openWorkspaceShareModal(): Promise<void> {
-  const modal = await modalController.create({
-    component: WorkspaceShareModal
-  });
-  modal.present();
-
-  const { data, role } = await modal.onWillDismiss();
-
-  if (role === 'confirm') {
-    console.log(data);
   }
 }
 

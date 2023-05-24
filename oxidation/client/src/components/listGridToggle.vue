@@ -59,28 +59,28 @@ function toggleView() : void {
 </script>
 
 <style scoped lang="scss">
-.list-grid-toggle{
+.list-grid-toggle {
   display: flex;
   align-items: center;
 }
 
-.button-view{
+.button-view {
   color: var(--parsec-color-light-primary-700);
   padding: 0.25rem;
   border-radius: 4px;
   height: auto;
 
-  span{
+  span {
     margin-left: .5rem;
   }
 
-  &:not(.button-disabled){
+  &:not(.button-disabled) {
     cursor: pointer;
     --background-hover: none;
   }
 }
 
-.button-disabled{
+.button-disabled {
   background: var(--parsec-color-light-secondary-inversed-contrast);
   opacity: 1;
 }

@@ -84,7 +84,7 @@ import {
   cloudOffline
 } from 'ionicons/icons';
 import { ref, inject } from 'vue';
-import { IonIcon, IonButton, IonItem, IonLabel, IonAvatar } from '@ionic/vue';
+import { IonIcon, IonButton, IonItem, IonLabel } from '@ionic/vue';
 import { FormattersKey } from '@/common/injectionKeys';
 import { MockWorkspace } from '@/common/mocks';
 import AvatarGroup from '@/components/AvatarGroup.vue';
@@ -154,7 +154,7 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
       bottom: 1px;
       left: 53%;
       padding: 2px;
-      background: white;
+      background: var(--parsec-color-light-secondary-inversed-contrast);
       border-radius: 50%;
     }
 
@@ -165,12 +165,12 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
     .cloud-overlay-ko {
       color: var(--parsec-color-light-secondary-text);
     }
-}
+  }
 
   &__label {
-  color: var(--parsec-color-light-secondary-text);
-  margin-left: 1em;
-}
+    color: var(--parsec-color-light-secondary-text);
+    margin-left: 1em;
+  }
 }
 
 .workspace-role {
