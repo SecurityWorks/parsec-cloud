@@ -42,7 +42,7 @@ defineProps<{
     margin-left: -0.6em;
     height: 2rem;
     width: 2rem;
-    border: 1px solid var(--parsec-color-light-secondary-inversed-contrast);
+    border: 2px solid var(--parsec-color-light-secondary-inversed-contrast);
 
     &:first-of-type{
       margin-left: 0;

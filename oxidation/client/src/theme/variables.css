@@ -233,9 +233,10 @@ body.dark {
   --ion-card-background: #1e1e1e;
 }
 
-/**** Parsec colors ****/
 
 :root {
+  /**** Parsec colors ****/
+
   /*** Light ***/
   /* Primary */
   --parsec-color-light-primary-30-opacity15: hsla(212, 100%, 97.1%, 0.15000000596046448);
@@ -276,14 +277,21 @@ body.dark {
   --parsec-color-light-danger-700: hsla(352, 60.8%, 40%, 1);
 
   /* ------ tags light------ */
-  ---parsec-color--tags-blue100: hsla(198, 100%, 92%, 1);
-  ---parsec-color--tags-blue500: hsla(198, 82%, 36%, 1);
-  ---parsec-color--tags-indigo100: hsla(247, 100%, 95%, 1);
-  ---parsec-color--tags-indigo500: hsla(245, 100%, 36%, 1);
-  ---parsec-color--tags-orange100: hsla(37, 100%, 95%, 1);
-  ---parsec-color--tags-orange500: hsla(36, 100%, 36%, 1);
-  ---parsec-color--tags-green100: hsla(68, 100%, 92%, 1);
-  ---parsec-color--tags-green500: hsla(72, 90%, 32%, 1);
+  --parsec-color-tags-blue100: hsla(198, 100%, 92%, 1);
+  --parsec-color-tags-blue500: hsla(198, 82%, 36%, 1);
+  --parsec-color-tags-indigo100: hsla(247, 100%, 95%, 1);
+  --parsec-color-tags-indigo500: hsla(245, 100%, 36%, 1);
+  --parsec-color-tags-orange100: hsla(37, 100%, 95%, 1);
+  --parsec-color-tags-orange500: hsla(36, 100%, 36%, 1);
+  --parsec-color-tags-green100: hsla(68, 100%, 92%, 1);
+  --parsec-color-tags-green500: hsla(72, 90%, 32%, 1);
+
+
+  /* **** Parsec shadow **** */
+  --parsec-shadow-light: 0px 4px 12px rgba(0, 0, 0, 0.08);
+  --parsec-shadow-strong: 0px 4px 20px rgba(0, 0, 0, 0.15);
+  --parsec-shadow-toggle: -2px 1px 6px rgba(0, 0, 0, 0.24);
+
 }
 
 /* **** Parsec typography **** */
@@ -389,6 +397,7 @@ body.dark {
 
 .caption-caption {
   font-size: 0.875rem;
+  font-weight: 500;
   line-height: 133%;
   letter-spacing: 0.15px;
 }
@@ -479,15 +488,6 @@ body.dark {
   font-size: 0.75rem;
   line-height: 133%;
   letter-spacing: 0.4px;
-  --parsec-color-light-secondary-contrast: hsla(240, 19.4%, 13.1%, 1);
-  --parsec-color-light-secondary-text: hsla(240, 20.2%, 34.9%, 1);
-  --parsec-color-light-secondary-grey: hsla(240, 19.6%, 60%, 1);
-  --parsec-color-light-secondary-light: hsla(240, 19.5%, 84.9%, 1);
-  --parsec-color-light-secondary-disabled: hsla(240, 20%, 93.1%, 1);
-  --parsec-color-light-secondary-medium: hsla(240, 20%, 96.1%, 1);
-  --parsec-color-light-secondary-premiere: hsla(240, 20%, 96.1%, 1);
-  --parsec-color-light-secondary-background: hsla(240, 20%, 98%, 1);
-  --parsec-color-light-secondary-inversed-contrast: hsla(0, 0%, 99.6%, 1);
 }
 
 
@@ -502,8 +502,16 @@ https: //github.com/ionic-team/ionic-framework/issues/24080 */
   --box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+ion-list.container {
+  margin-top: 0;
+}
+
 ion-popover {
   --width: 300px;
+}
+
+ion-popover::part(content) {
+  border-radius: 6px;
 }
 
 .profile-header-popover {

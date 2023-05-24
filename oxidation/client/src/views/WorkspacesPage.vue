@@ -10,41 +10,16 @@
           :icon="addCircle"
           @click="openCreateWorkspaceModal()"
         />
-        <div class="button-view">
+        <div class="rightSide">
           <ms-select
             id="filter-select"
             :options="msSelectOptions"
             default-option="name"
             @change="onMsSelectChange($event)"
           />
-          <!-- grid -->
-          <ion-button
-            fill="clear"
-            id="grid-view"
-            :disabled="!listView"
-            @click="listView = !listView"
-          >
-            <ion-icon
-              :icon="grid"
-            />
-            <span v-if="!listView">
-              {{ $t('WorkspacesPage.viewDisplay.grid') }}
-            </span>
-          </ion-button>
-          <!-- list -->
-          <ion-button
-            fill="clear"
-            id="list-view"
-            :disabled="listView"
-            @click="listView = !listView"
-          >
-            <ion-icon
-              :icon="list"
-            />
-            <span v-if="listView">
-              {{ $t('WorkspacesPage.viewDisplay.list') }}
-            </span>
-          </ion-button>
+          <list-grid-toggle
+            @toggle-view="onToggleView($event)"
+          />
         </div>
       </ion-item-divider>
       <!-- workspaces -->
@@ -55,11 +30,22 @@
               class="workspace-list-header"
               lines="full"
             >
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.name') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.role') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.sharedWith') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.lastUpdate') }}</ion-label>
-              <ion-label>{{ $t('WorkspacesPage.listDisplayTitles.size') }}</ion-label>
+              <ion-label class="workspace-list-header__label label-name">
+                {{ $t('WorkspacesPage.listDisplayTitles.name') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-role">
+                {{ $t('WorkspacesPage.listDisplayTitles.role') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-users">
+                {{ $t('WorkspacesPage.listDisplayTitles.sharedWith') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-update">
+                {{ $t('WorkspacesPage.listDisplayTitles.lastUpdate') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-size">
+                {{ $t('WorkspacesPage.listDisplayTitles.size') }}
+              </ion-label>
+              <ion-label class="workspace-list-header__label label-space"></ion-label>
             </ion-list-header>
             <workspace-list-item
               v-for="workspace in filteredWorkspaces"
@@ -73,10 +59,10 @@
         </div>
         <div
           v-else
-          class="workspaces-grid-container"
+          class="workspaces-container-grid"
         >
           <ion-item
-            class="workspaces-list-grid"
+            class="workspaces-grid-item"
             v-for="workspace in filteredWorkspaces"
             :key="workspace.id"
           >
@@ -109,7 +95,6 @@
 <script setup lang = "ts" >
 import {
   IonLabel,
-  IonButton,
   IonIcon,
   IonPage,
   IonItemDivider,
@@ -118,16 +103,14 @@ import {
   isPlatform,
   IonFab,
   IonFabButton,
-  IonGrid,
-  IonCol,
-  IonRow,
   modalController,
   IonList,
-  IonListHeader
+  IonListHeader,
+  IonItem
 } from '@ionic/vue';
 
 import {
-  addCircle, grid, list
+  addCircle
 } from 'ionicons/icons';
 import WorkspaceCard from '@/components/WorkspaceCard.vue';
 import WorkspaceListItem from '@/components/WorkspaceListItem.vue';
@@ -135,17 +118,17 @@ import { MockWorkspace, getMockWorkspaces } from '@/common/mocks';
 import WorkspaceContextMenu from '@/components/WorkspaceContextMenu.vue';
 import { WorkspaceAction } from '@/components/WorkspaceContextMenu.vue';
 import CreateWorkspaceModal from '@/components/CreateWorkspaceModal.vue';
-import WorkspaceShareModal from '@/components/WorkspaceShareModal.vue';
 import MsSelect from '@/components/MsSelect.vue';
 import ButtonOption from '@/components/ButtonOption.vue';
 import { MsSelectChangeEvent, MsSelectOption } from '@/components/MsSelectOption';
+import ListGridToggle from '@/components/listGridToggle.vue';
 import { useI18n } from 'vue-i18n';
 import { ref, Ref, onMounted, computed } from 'vue';
 
 const { t } = useI18n();
-const listView = ref(false);
 const sortBy = ref('name');
 const workspaceList: Ref<MockWorkspace[]> = ref([]);
+const listView = ref(false);
 
 onMounted(async (): Promise<void> => {
   workspaceList.value = await getMockWorkspaces();
@@ -223,17 +206,8 @@ async function openWorkspaceContextMenu(event: Event, workspace: MockWorkspace):
   }
 }
 
-async function openWorkspaceShareModal(): Promise<void> {
-  const modal = await modalController.create({
-    component: WorkspaceShareModal
-  });
-  modal.present();
-
-  const { data, role } = await modal.onWillDismiss();
-
-  if (role === 'confirm') {
-    console.log(data);
-  }
+function onToggleView(value: boolean): void {
+  listView.value = value;
 }
 </script>
 
@@ -247,6 +221,49 @@ async function openWorkspaceShareModal(): Promise<void> {
 .workspace-list-header {
   color: var(--parsec-color-light-secondary-grey);
   font-weight: 600;
+  padding-inline-start:0;
+
+  &__label {
+    padding: 0 1rem;
+    height: 100%;
+    display: flex;
+    align-items: center;
+  }
+
+  .label-name {
+    width: 100%;
+    max-width: 20vw;
+    min-width: 11.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .label-role {
+    min-width: 11.25rem;
+    max-width: 10vw;
+    flex-grow: 2;
+  }
+
+  .label-users {
+    min-width: 14.5rem;
+    flex-grow: 0;
+  }
+
+  .label-update {
+    min-width: 11.25rem;
+    flex-grow: 0;
+  }
+
+  .label-size {
+    min-width: 7.5rem;
+  }
+
+  .label-space {
+    min-width: 4rem;
+    flex-grow: 0;
+    margin-left: auto;
+    margin-right: 1rem;
+  }
 }
 
 .workspaces-footer {
@@ -259,12 +276,17 @@ async function openWorkspaceShareModal(): Promise<void> {
   color: var(--parsec-color-light-secondary-text);
   margin-bottom: 2em;
 }
-.workspaces-grid-container {
-  // grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+
+.workspaces-container-grid {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5em;
   overflow-y: auto;
+
+}
+
+ion-item::part(native) {
+  --padding-start: 0px;
 }
 
 .workspace-toolbar {
@@ -274,12 +296,9 @@ async function openWorkspaceShareModal(): Promise<void> {
   border-top: 1px solid var(--parsec-color-light-secondary-light);
 }
 
-.button-view {
+.rightSide {
   margin-left: auto;
-}
-
-.add-workspace-button {
-  color: var(--parsec-color-light-secondary-grey);
+  display: flex;
 }
 
 </style>
