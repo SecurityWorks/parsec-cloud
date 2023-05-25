@@ -167,6 +167,12 @@
             "sortByName": "Name",
             "sortBySize": "Size",
             "sortByLastUpdated": "Last update"
+        },
+        "role": {
+            "owner": "Owner",
+            "manager": "Manager",
+            "contributor": "Contributor",
+            "reader": "Reader"
         }
     },
     "OrganizationPage": {

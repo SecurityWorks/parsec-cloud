@@ -167,6 +167,12 @@
             "sortByName": "Nom",
             "sortBySize": "Taille",
             "sortByLastUpdated": "Dernière màj"
+        },
+        "role": {
+            "owner": "Propriétaire",
+            "manager": "Gérant",
+            "contributor": "Contributeur",
+            "reader": "Lecteur"
         }
     },
     "OrganizationPage": {
