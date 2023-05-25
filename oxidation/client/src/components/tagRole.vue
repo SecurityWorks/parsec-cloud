@@ -2,12 +2,11 @@
 
 <template>
   <ion-label class="label-role">
-    <!-- if class role = owner add class : owner -->
     <ion-chip
       class="caption-caption tag"
       :class="role"
     >
-      {{ role }}
+      {{ $t( "HomePage.WorkspacesPage.role" ) }}
     </ion-chip>
   </ion-label>
 </template>
@@ -27,22 +26,22 @@ defineProps<{
   height: auto;
 }
 
-.Owner {
+.owner {
   background-color: var(--parsec-color-light-primary-50);
   color: var(--parsec-color-light-primary-700);
 }
 
-.Manager {
+.manager {
   background-color: var(--parsec-color-tags-indigo100);
   color: var(--parsec-color-tags-indigo500);
 }
 
-.Contributor {
+.contributor {
   background-color: var(--parsec-color-tags-green100);
   color: var(--parsec-color-tags-green500);
 }
 
-.Reader {
+.reader {
   background-color: var(--parsec-color-tags-orange100);
   color: var(--parsec-color-tags-orange500);
 }
