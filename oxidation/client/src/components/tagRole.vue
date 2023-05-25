@@ -19,7 +19,6 @@ import { defineProps } from 'vue';
 defineProps<{
   role: string
 }>();
-
 </script>
 
 <style scoped lang="scss">

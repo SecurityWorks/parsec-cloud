@@ -1,22 +1,23 @@
 // Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 (eventually AGPL-3.0) 2016-present Scille SAS
 
+/*
+Format the specified number of bytes with the corresponding system.
+
+More specifically:
+- `0 <= bytes < 10`:          1 significant figures:     `X B`
+- `10 <= bytes < 100`:        2 significant figures:    `XY B`
+- `100 <= bytes < 1000`:      3 significant figures:   `XYZ B`
+- `1000 <= bytes < 1024`:     2 significant figures: `0.9X KB`
+- `1 <= kilobytes < 10`:      3 significant figures: `X.YZ KB`
+- `10 <= kilobytes < 100`:    3 significant figures: `XY.Z KB`
+- `100 <= kilobytes < 1000`:  3 significant figures:  `XYZ KB`
+- `1000 <= kilobytes < 1024`: 2 significant figures: `0.9X MB`
+- And so on for MB, GB and TB
+*/
+
 import { ComposerTranslation } from 'vue-i18n';
 
 function size(bytes: number, system: [number, string][]): string {
-  /*
-  Format the specified number of bytes with the corresponding system.
-
-  More specifically:
-  - `0 <= bytes < 10`:          1 significant figures:     `X B`
-  - `10 <= bytes < 100`:        2 significant figures:    `XY B`
-  - `100 <= bytes < 1000`:      3 significant figures:   `XYZ B`
-  - `1000 <= bytes < 1024`:     2 significant figures: `0.9X KB`
-  - `1 <= kilobytes < 10`:      3 significant figures: `X.YZ KB`
-  - `10 <= kilobytes < 100`:    3 significant figures: `XY.Z KB`
-  - `100 <= kilobytes < 1000`:  3 significant figures:  `XYZ KB`
-  - `1000 <= kilobytes < 1024`: 2 significant figures: `0.9X MB`
-  - And so on for MB, GB and TB
-  */
 
   // Iterate over factors, expecting them to be in increasing order
   let formattedAmount = '';

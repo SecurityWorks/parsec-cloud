@@ -10,7 +10,7 @@
           :icon="addCircle"
           @click="openCreateWorkspaceModal()"
         />
-        <div class="rightSide">
+        <div class="right-side">
           <ms-select
             id="filter-select"
             :options="msSelectOptions"
@@ -92,7 +92,7 @@
   </ion-page>
 </template>
 
-<script setup lang = "ts" >
+<script setup lang="ts">
 import {
   IonLabel,
   IonIcon,
@@ -212,7 +212,6 @@ function onToggleView(value: boolean): void {
 </script>
 
 <style lang="scss" scoped>
-
 .workspaces-container {
   margin: 2em;
   background-color: white;
@@ -282,7 +281,6 @@ function onToggleView(value: boolean): void {
   flex-wrap: wrap;
   gap: 1.5em;
   overflow-y: auto;
-
 }
 
 ion-item::part(native) {
@@ -296,9 +294,8 @@ ion-item::part(native) {
   border-top: 1px solid var(--parsec-color-light-secondary-light);
 }
 
-.rightSide {
+.right-side {
   margin-left: auto;
   display: flex;
 }
-
 </style>

@@ -87,8 +87,6 @@
           </ion-label>
         </ion-item>
       </ion-item-group>
-
-      <!-- OK -->
       <ion-item-group class="group">
         <ion-item
           class="group-title caption-caption"
@@ -112,7 +110,7 @@
   </ion-content>
 </template>
 
-<script lang = "ts">
+<script lang="ts">
 export enum WorkspaceAction {
   Rename,
   MakeAvailableOffline,
@@ -124,7 +122,7 @@ export enum WorkspaceAction {
 }
 </script>
 
-<script setup lang = "ts" >
+<script setup lang="ts" >
 import { IonContent, IonItem, IonLabel, IonList, popoverController, IonIcon, IonItemGroup } from '@ionic/vue';
 import {
   cloudy,
@@ -202,5 +200,4 @@ ion-item {
     color: var(--parsec-color-light-secondary-grey);
   }
 }
-
 </style>

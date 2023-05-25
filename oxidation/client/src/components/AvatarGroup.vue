@@ -51,8 +51,8 @@ defineProps<{
 }
 
 .person-avatar {
-  background-color: #E8E5FF;
-  color: #9747FF;
+  background-color: var(--parsec-color-tags-indigo100);
+  color: var(--parsec-color-tags-indigo500);
 }
 
 .extra-avatar {

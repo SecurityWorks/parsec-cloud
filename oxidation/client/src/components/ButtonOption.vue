@@ -5,12 +5,13 @@
     class="button-option body"
   >
     <ion-icon
-      slot="end"
+      slot="start"
       :icon="icon"
     />
     {{ buttonLabel }}
   </ion-button>
 </template>
+
 <script setup lang="ts">
 import { defineProps } from 'vue';
 import {
@@ -23,11 +24,9 @@ defineProps<{
   buttonLabel: any,
   icon?: string
 }>();
-
 </script>
 
 <style lang="scss" scoped>
-
 .button-option {
   --background: none !important;
   --background-hover: var(--parsec-color-light-primary-50) !important;
@@ -44,5 +43,4 @@ defineProps<{
     color: var(--parsec-color-light-primary-600);
   }
 }
-
 </style>

@@ -55,7 +55,6 @@ function toggleView() : void {
   listView.value = !listView.value;
   emits('toggleView', listView.value);
 }
-
 </script>
 
 <style scoped lang="scss">
@@ -91,5 +90,4 @@ ion-button::part(native) {
   padding-top: 0px;
   padding-bottom: 0px;
 }
-
 </style>

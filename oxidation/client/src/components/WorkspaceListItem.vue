@@ -104,11 +104,9 @@ defineEmits<{
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const { timeSince, fileSize } = inject(FormattersKey)!;
-
 </script>
 
 <style lang="scss" scoped>
-
 .workspace-list-item {
   --background-activated: var(--parsec-color-light-primary-100);
   border-radius: 4px;
@@ -144,7 +142,7 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
 
     .main-icon {
       color: var(--parsec-color-light-secondary-text);
-      font-size:1.5rem ;
+      font-size: 1.5rem;
     }
 
     .cloud-overlay {
@@ -220,5 +218,4 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
 .label-size, .label-shared-with, .label-last-update {
   color: var(--parsec-color-light-secondary-grey);
 }
-
 </style>

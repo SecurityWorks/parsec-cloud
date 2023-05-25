@@ -77,11 +77,9 @@ defineEmits<{
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const { timeSince, fileSize } = inject(FormattersKey)!;
-
 </script>
 
 <style lang="scss" scoped>
-
 .card {
   padding: 2rem 1em 1em;
   cursor: pointer;
