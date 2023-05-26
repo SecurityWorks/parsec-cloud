@@ -75,7 +75,7 @@
           </ion-item>
         </div>
       </div>
-      <div class="workspaces-footer">
+      <div class="workspaces-footer title-h5">
         {{ $t('WorkspacesPage.itemCount', { count: workspaceList.length }, workspaceList.length) }}
       </div>
       <ion-fab
@@ -271,7 +271,6 @@ function onToggleView(value: boolean): void {
   position: fixed;
   bottom: 0;
   text-align: center;
-  font-weight: 600;
   color: var(--parsec-color-light-secondary-text);
   margin-bottom: 2em;
 }
