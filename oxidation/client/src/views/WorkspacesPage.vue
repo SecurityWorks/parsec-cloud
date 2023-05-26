@@ -129,6 +129,8 @@ const { t } = useI18n();
 const sortBy = ref('name');
 const workspaceList: Ref<MockWorkspace[]> = ref([]);
 const listView = ref(false);
+const currentRoute = useRoute();
+const router = useRouter();
 
 onMounted(async (): Promise<void> => {
   workspaceList.value = await getMockWorkspaces();

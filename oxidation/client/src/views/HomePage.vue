@@ -19,7 +19,7 @@
               <ion-col size="2">
                 <ion-button
                   fill="clear"
-                  @click="$router.push('settings')"
+                  @click="openSettingsModal()"
                   id="settings-button"
                 >
                   <ion-icon
@@ -231,6 +231,7 @@ import { useI18n } from 'vue-i18n';
 import { onMounted, ref, toRaw, computed, inject, Ref } from 'vue';
 import JoinByLinkModal from '@/components/JoinByLinkModal.vue';
 import CreateOrganization from '@/components/CreateOrganizationModal.vue';
+import SettingsModal from '@/views/SettingsModal.vue';
 import OrganizationCard from '@/components/OrganizationCard.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import SearchInput from '@/components/SearchInput.vue';
@@ -343,7 +344,7 @@ async function login(): Promise<void> {
   await storageManager.storeDevicesData(toRaw(storedDeviceDataDict.value));
 
   // name: define where the user will be move, query: add parameters
-  router.push({ name: 'workspaces', query: { device: JSON.stringify(selectedDevice) } });
+  router.push({ name: 'workspaces', params: {deviceId: selectedDevice.deviceId} });
 }
 
 function onForgottenPasswordClick(): void {
@@ -377,6 +378,16 @@ async function openCreateOrganizationModal(): Promise<void> {
   if (role === 'confirm') {
     console.log(data);
   }
+}
+
+async function openSettingsModal(): Promise<void> {
+  const modal = await modalController.create({
+    component: SettingsModal,
+    cssClass: 'settings-modal'
+  });
+  await modal.present();
+
+  const { data, role } = await modal.onWillDismiss();
 }
 
 async function canDismissModal(): Promise<boolean> {

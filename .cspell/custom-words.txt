@@ -86,6 +86,7 @@ dotenv
 drawio
 duckpy
 dvipdfmx
+egldeviceintegrations
 EINVAL
 enmascarado
 excrepr
@@ -165,18 +166,21 @@ libgstaudiodecoder
 libgstcamerabin
 libgstmediacapture
 libgstmediaplayer
+libgstreamer
 libmpdec
 libncursesw
 libopenglrenderer
 libpulse
 libpython
 libqconnmanbearer
+libqeglfs
 libqgenericbearer
 libqgtk
 libqnmbearer
 libqsqlite
 libqsqlodbc
 libqsqlpsql
+libqt
 libqtaudio
 libqtexttospeech
 libqtgeoservices
@@ -240,6 +244,7 @@ nocapture
 NONCEBYTES
 noopener
 noreferrer
+noreply
 notbase
 notr
 nplurals
@@ -412,6 +417,7 @@ unhexlify
 Unmarshal
 unmock
 unpackb
+unsync
 unwinify
 urlsafe
 userfrom
