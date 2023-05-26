@@ -45,7 +45,7 @@
               <ion-label class="workspace-list-header__label label-size">
                 {{ $t('WorkspacesPage.listDisplayTitles.size') }}
               </ion-label>
-              <ion-label class="workspace-list-header__label label-space"></ion-label>
+              <ion-label class="workspace-list-header__label label-space" />
             </ion-list-header>
             <workspace-list-item
               v-for="workspace in filteredWorkspaces"
@@ -124,6 +124,7 @@ import { MsSelectChangeEvent, MsSelectOption } from '@/components/MsSelectOption
 import ListGridToggle from '@/components/listGridToggle.vue';
 import { useI18n } from 'vue-i18n';
 import { ref, Ref, onMounted, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const { t } = useI18n();
 const sortBy = ref('name');
