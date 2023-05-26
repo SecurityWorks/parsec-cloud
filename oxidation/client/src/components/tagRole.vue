@@ -6,7 +6,7 @@
       class="caption-caption tag"
       :class="role"
     >
-      {{ $t( "HomePage.WorkspacesPage.role" ) }}
+      {{ role }}
     </ion-chip>
   </ion-label>
 </template>
@@ -26,22 +26,22 @@ defineProps<{
   height: auto;
 }
 
-.owner {
+.Owner {
   background-color: var(--parsec-color-light-primary-50);
   color: var(--parsec-color-light-primary-700);
 }
 
-.manager {
+.Manager {
   background-color: var(--parsec-color-tags-indigo100);
   color: var(--parsec-color-tags-indigo500);
 }
 
-.contributor {
+.Contributor {
   background-color: var(--parsec-color-tags-green100);
   color: var(--parsec-color-tags-green500);
 }
 
-.reader {
+.Reader {
   background-color: var(--parsec-color-tags-orange100);
   color: var(--parsec-color-tags-orange500);
 }
