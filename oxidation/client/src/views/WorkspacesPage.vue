@@ -175,15 +175,19 @@ async function openCreateWorkspaceModal(): Promise<void> {
   }
 }
 
-function onWorkspaceClick(_: Event, workspace: MockWorkspace): void {
-  console.log('Workspace Clicked!', workspace.name);
+function onWorkspaceClick(_event: Event, workspace: MockWorkspace): void {
+  router.push({
+    name: 'folder',
+    params: { deviceId: currentRoute.params.deviceId, workspaceId: workspace.id },
+    query: { path: '/how/boring/and/small' }
+  });
 }
 
 function onWorkspaceShareClick(_: Event, workspace: MockWorkspace): void {
   console.log('Share workspace Clicked!', workspace.name);
 }
 
-async function openWorkspaceContextMenu(event: Event, workspace: MockWorkspace): Promise<void> {
+async function openWorkspaceContextMenu(event: Event, _workspace: MockWorkspace): Promise<void> {
   const popover = await popoverController
     .create({
       component: WorkspaceContextMenu,

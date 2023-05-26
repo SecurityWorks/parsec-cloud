@@ -27,7 +27,7 @@
         <ion-item
           class="group-title caption-caption"
         >
-          <ion-label  class="group-title__label">
+          <ion-label class="group-title__label">
             {{ $t('WorkspacesPage.workspaceContextMenu.titleManage') }}
           </ion-label>
         </ion-item>

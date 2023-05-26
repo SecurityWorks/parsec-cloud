@@ -6,22 +6,21 @@ import { DateTime } from 'luxon';
 import { AvailableDevice } from '../plugins/libparsec/definitions';
 import { StorageManager } from '@/services/storageManager';
 
+export enum WorkspaceRole {
+  Owner = 'owner',
+  Manager = 'manager',
+  Contributor = 'contributor',
+  Reader = 'reader'
+}
+
 export interface MockWorkspace {
   id: string;
   name: string;
   sharedWith: string[];
   size: number;
-  role: string;
+  role: WorkspaceRole;
   availableOffline: boolean;
   lastUpdate: DateTime;
-}
-
-enum WorkspaceRole {
-  owner = 'owner',
-  admin = 'admin',
-  manager = 'manager',
-  contributor = 'contributor',
-  reader = 'reader'
 }
 
 const MOCK_WORKSPACES: MockWorkspace[] = [
@@ -30,7 +29,7 @@ const MOCK_WORKSPACES: MockWorkspace[] = [
     name: 'Trademeet',
     sharedWith: ['Me', 'Cernd', 'Valygar Corthala'],
     size: 60_817_408,
-    role: WorkspaceRole.reader,
+    role: WorkspaceRole.Reader,
     availableOffline: false,
     lastUpdate: DateTime.fromISO('2023-05-10T08:00:00')
   },
@@ -39,7 +38,7 @@ const MOCK_WORKSPACES: MockWorkspace[] = [
     name: 'The Copper Coronet',
     sharedWith: ['Me', 'Korgan Bloodaxe', 'Anomen Delryn', 'Nalia De\'Arnise', 'Jaheira', 'Yoshimo'],
     size: 8_589_934_592,
-    role: WorkspaceRole.owner,
+    role: WorkspaceRole.Owner,
     availableOffline: true,
     lastUpdate: DateTime.fromISO('2023-05-08T12:00:00')
   },
@@ -48,7 +47,7 @@ const MOCK_WORKSPACES: MockWorkspace[] = [
     name: 'The Asylum',
     sharedWith: ['Me', 'Imoen'],
     size: 628_097_024,
-    role: WorkspaceRole.contributor,
+    role: WorkspaceRole.Contributor,
     availableOffline: true,
     lastUpdate: DateTime.fromISO('2023-04-07T12:00:00')
   },
@@ -57,7 +56,7 @@ const MOCK_WORKSPACES: MockWorkspace[] = [
     name: 'De\'Arnise Keep',
     sharedWith: ['Me'],
     size: 33_382,
-    role: WorkspaceRole.owner,
+    role: WorkspaceRole.Owner,
     availableOffline: false,
     lastUpdate: DateTime.fromISO('2023-05-07T02:00:00')
   },
@@ -66,7 +65,7 @@ const MOCK_WORKSPACES: MockWorkspace[] = [
     name: 'Menzoberranzan',
     sharedWith: ['Me', 'Drizzt Do\'Urden', 'Viconia', 'Jan Jansen'],
     size: 4_214_402_531,
-    role: WorkspaceRole.manager,
+    role: WorkspaceRole.Manager,
     availableOffline: true,
     lastUpdate: DateTime.fromISO('2023-05-09T08:00:00')
   }

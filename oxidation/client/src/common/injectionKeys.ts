@@ -5,7 +5,7 @@ import { DateTime } from 'luxon';
 import { StorageManager } from '@/services/storageManager';
 
 export interface Formatters {
-  timeSince(date: DateTime | undefined, defaultValue?: string): string;
+  timeSince(date: DateTime | undefined, defaultValue?: string, format?: string): string;
   fileSize(bytes: number): string;
 }
 
