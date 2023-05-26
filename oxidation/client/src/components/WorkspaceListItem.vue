@@ -30,7 +30,7 @@
     <!-- role user -->
     <div class="workspace-role">
       <tag-role
-        :role="$t( 'WorkspacesPage.role' + '.' + workspace.role )"
+        :role="workspace.role"
       />
     </div>
 

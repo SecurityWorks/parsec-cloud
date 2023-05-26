@@ -292,6 +292,14 @@ body.dark {
   --parsec-shadow-strong: 0px 4px 20px rgba(0, 0, 0, 0.15);
   --parsec-shadow-toggle: -2px 1px 6px rgba(0, 0, 0, 0.24);
 
+  /* **** Parsec border-radius **** */
+  --parsec-radius-2: 2px;
+  --parsec-radius-4: 4px;
+  --parsec-radius-6: 6px;
+  --parsec-radius-8: .5em;
+  --parsec-radius-12: .75em;
+  --parsec-radius-32: 2em;
+  --parsec-radius-circle: 50%;
 }
 
 /* **** Parsec typography **** */

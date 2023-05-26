@@ -86,11 +86,12 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   text-align: center;
   background-color: var(--parsec-color-light-secondary-background);
   user-select: none;
-  border-radius: var(--parsec-radius-8);
+  border-radius: 8px;
   width: 16rem;
 
   &:hover {
     background-color: var(--parsec-color-light-primary-30);
+    // box-shadow: var(--parsec-shadow-light);
   }
 }
 
@@ -105,13 +106,13 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   font-size: 1.5rem;
   padding: .75rem;
 
-  &:hover {
+  &:hover{
     color: var(--parsec-color-light-primary-500);
   }
 }
 
 .card-content-icons {
-  margin: 0 auto .5rem;
+  margin:0 auto .5rem;
   position: relative;
   height: fit-content;
   display: flex;
@@ -127,11 +128,11 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   .cloud-overlay {
     position: absolute;
     font-size: 1.25rem;
-    bottom: -25%;
+    bottom: -10px;
     left: 54%;
     padding: 2px;
     background: white;
-    border-radius: var(--parsec-radius-circle);
+    border-radius: 50%;
   }
 
   .cloud-overlay-ok {
@@ -145,6 +146,8 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
 
 .card-content__title {
   color: var(--parsec-color-light-primary-900);
+  font-size: 18px;
+  text-align: center;
 
   ion-text {
     width: 100%;
@@ -171,5 +174,10 @@ const { timeSince, fileSize } = inject(FormattersKey)!;
   align-items: center;
   color: var(--parsec-color-light-secondary-grey);
   border-top: 1px solid var(--parsec-color-light-secondary-disabled);
+}
+
+/* No idea how to change the color of the ion-item */
+.card-content__title::part(native), .workspace-info::part(native), .card-content-last-update::part(native) {
+  background-color: var(--parsec-color-light-secondary-background);
 }
 </style>
