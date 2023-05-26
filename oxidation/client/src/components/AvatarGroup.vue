@@ -33,7 +33,7 @@ defineProps<{
   display: flex;
   flex-wrap: nowrap;
   background: var(--parsec-color-light-secondary-inversed-contrast);
-  border-radius: 32px;
+  border-radius: var(--parsec-radius-32);
 
   .avatar {
     display: flex;
