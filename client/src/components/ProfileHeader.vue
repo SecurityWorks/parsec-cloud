@@ -42,10 +42,12 @@ import { defineProps, ref } from 'vue';
 import ProfileHeaderPopover from '@/components/ProfileHeaderPopover.vue';
 import { ProfilePopoverOption } from '@/components/ProfileHeaderPopover.vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 
 const isPopoverOpen = ref(false);
 const chevron = ref();
 const router = useRouter();
+const { t } = useI18n();
 
 const props = defineProps<{
   firstname: string,
@@ -76,14 +78,16 @@ async function openPopover(ev: Event): Promise<void> {
       router.replace({ name: 'home' });
     } else if (value.data.option === ProfilePopoverOption.Settings) {
       router.push({ name: 'settings' });
+    } else if (value.data.option === ProfilePopoverOption.MyDevices) {
+      router.push({ name: 'devices' });
+    } else if (value.data.option === ProfilePopoverOption.Help) {
+      window.open(t('MenuPage.helpLink'), '_blank');
     }
   });
 }
-
 </script>
 
 <style lang="scss" scoped>
-
 .container {
   display: flex;
   flex-direction: column;
@@ -133,5 +137,4 @@ async function openPopover(ev: Event): Promise<void> {
   flex-direction: column;
   justify-content: center;
 }
-
 </style>

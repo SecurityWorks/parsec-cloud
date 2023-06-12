@@ -93,7 +93,8 @@
         "myOrganization": "Mon organisation",
         "settings": "Paramètres",
         "about": "À propos",
-        "support": "Aide et commentaires"
+        "support": "Aide et commentaires",
+        "helpLink": "https://my.parsec.cloud/help"
     },
     "HeaderPage": {
         "about": "À propos",
@@ -101,7 +102,8 @@
         "loggedIn": "Connecté",
         "titles": {
             "workspaces": "Mes espaces",
-            "settings": "Paramètres"
+            "settings": "Paramètres",
+            "devices": "Appareils"
         },
         "previous": "Précédent"
     },
@@ -238,5 +240,9 @@
         "passwordLevelHigh": "Fort",
         "passwordCriteria": "Assurez-vous qu'il comporte au moins 15 caractères OU au moins 8 caractères comprenant un chiffre et une lettre minuscule.",
         "noMatch": "Ne correspondent pas"
+    },
+    "DevicesPage": {
+        "title": "Vos appareils",
+        "addDevice": "Ajouter"
     }
 }

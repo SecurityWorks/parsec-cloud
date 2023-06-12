@@ -2,21 +2,18 @@
 
 # Release Cheat-Sheet
 
-- [Release Cheat-Sheet](#release-cheat-sheet)
-  - [Major/minor vs patch versions](#majorminor-vs-patch-versions)
-  - [Release Checklist](#release-checklist)
-  - [Release major/minor version](#release-majorminor-version)
-    - [Create release candidate version](#create-release-candidate-version)
-    - [Create the release](#create-the-release)
-    - [Create the release Pull Request](#create-the-release-pull-request)
-    - [Sign the installers](#sign-the-installers)
-    - [Create the release on Github](#create-the-release-on-github)
-    - [Merge (or update) the Pull Request](#merge-or-update-the-pull-request)
-  - [Release patch version](#release-patch-version)
-    - [(Re)create the version branch](#recreate-the-version-branch)
-    - [Cherry-pick the changes](#cherry-pick-the-changes)
-    - [Follow the major/minor guide](#follow-the-majorminor-guide)
-    - [All done](#all-done)
+- [Major/minor vs patch versions](#majorminor-vs-patch-versions)
+- [Release Checklist](#release-checklist)
+- [Release major/minor version](#release-majorminor-version)
+  - [Create release candidate version](#create-release-candidate-version)
+  - [Create the release](#create-the-release)
+  - [Acknowledge the release](#acknowledge-the-release)
+  - [The release train diagram](#the-release-train-diagram)
+- [Release patch version](#release-patch-version)
+  - [(Re)create the version branch](#recreate-the-version-branch)
+  - [Cherry-pick the changes](#cherry-pick-the-changes)
+  - [Follow the major/minor guide](#follow-the-majorminor-guide)
+  - [All done](#all-done)
 
 ## Major/minor vs patch versions
 
@@ -26,8 +23,18 @@ When the need for release comes, the obvious question is:
 
 The flowchart is:
 
-- You want to release what's on the tip of master ⟶ do a minor bump
-- Otherwise ⟶ do a patch bump
+```mermaid
+flowchart TD
+  A{I need to fix a\nreleased version ?}
+  B[Do a patch bump]
+  C[Do a minor bump]
+
+  click B "#release-patch-version"
+  click C "#release-majorminor-version"
+
+  A -- Yes --> B
+  A -- No --> C
+```
 
 In other words, the patch bump should only be used to cherry-pick a subset of
 changes present on the master on a previous version.
@@ -38,14 +45,14 @@ For each release types, apply the following checklist:
 
 - The newsfragment were squashed to generate the block added to [`HISTORY.rst`](/HISTORY.rst).
 - The updated [`HISTORY.rst`](/HISTORY.rst) is correctly formated (Some news fragment may introduce invalid syntax that can break the RST file).
-- The translations are up-to-date (check the translations in `docs/`, `parsec/core/gui/tr/`, `client/src/locales/`).
-- The `releaser.py` correctly update the version in the expected files (`pyproject.toml`, `licenses/BUSL-Scille.txt`, `parsec/_version.py`).
+- The translations are up-to-date (check the translations in [`oxidation/client/src/locales/en-US.json`](/oxidation/client/src/locales/en-US.json) and [`oxidation/client/src/locales/fr-FR.json`](/client/src/locales/fr-FR.json)).
+- The `releaser.py` correctly update the version in the expected files (`server/pyproject.toml`, `licenses/BUSL-Scille.txt`, `server/parsec/_version.py`).
 
-Note: Most of the work can be done using the workflow [`release-starter`](https://github.com/Scille/parsec-cloud/actions/workflows/release-starter.yml) (_most_ because it won't cherry pick the commit need to patch a release).
+> Most of the work can be done using the `misc/releaser.py` script (It won't check if the translation are up-to-date).
 
 ## Release major/minor version
 
-In the following we will consider we want to release version ``v2.9.0``.
+In the following we will consider we want to release version `v2.9.0` from `v2.8.1+dev`.
 
 ### Create release candidate version
 
@@ -58,7 +65,7 @@ if you already have a release candidate that doesn't need any correction.
 Yes, even this ultra small 1 line typo fix. We've all been there, we all
 know how it ends up ;-)
 
-Release candidate versions must have the naming ``v2.9.0-rc1``, ``v2.9.0-rc2`` etc.
+Release candidate versions must have the naming `v2.9.0-rc1`, `v2.9.0-rc2`, etc.
 
 ### Create the release
 
@@ -103,58 +110,55 @@ The script will:
 
 - Push the branch `releases/2.9` & the tag `v2.9.0`
 
-  The script will require confirmation before continuing.
+  The script will require confirmation before pushing.
 
-### Sign the installers
+After the script has finished and pushed the release branch & tag to the repository,
+this will trigger the `releaser` workflow that will:
 
-⚠️ This step is outdated.
+1. Package the application in python wheels (for now we don't have any client ready).
+2. Create the release as a draft in <https://github.com/Scille/parsec-cloud/releases>.
 
-The CI is going to generate the installers for Linux, Mac and Windows.
+With the release published, this will trigger the workflow `publish` that will upload the generated python wheels to `pypi`.
 
-On Linux the snap installer is automatically released on the edge channel of snapcraft.
+### Acknowledge the release
 
-On Windows and Mac, the installers must be downloaded from the CI build artifacts and
-signed. See the documentation in ``packaging/`` for more information.
+If you were dealing with a final release (e.g. ``v2.9.0``)
 
-On top of that the Python wheel of the project is going to be uploaded to Pypi.
+You need to acknowledge the release (that means merge it back to the main branch).
 
-### Create the release on Github
+Use the following command:
 
-⚠️ This step is outdated.
+```shell
+python misc/releaser.py acknowledge v2.9.0
+```
 
-Once the tag pushed, it can be converted as a release on github using the
-[Draft a new release](https://github.com/Scille/parsec-cloud/releases/new).
+This command will:
 
-The release should contain the Mac and Windows installers that have been signed during step 4.
+- Ensure the version we want to acknowledge is indeed a release version (no pre-release, dev or local part).
+- Create the acknowledge branch `acknowledges/2.9.0`.
+- Push the branch to the remote server.
+- Create the pull-request using [`Github cli`](https://cli.github.com/)
 
-⚠️ Don't forget to check `Set as a pre-release` if your creating a release candidate !
+### The release train diagram
 
-> Note: The Parsec client's version checker is smart enough to ignore new version
-> that doesn't contain an installer for there platform. Hence it's safe to create
-> a new github release without any installer.
+```mermaid
+flowchart TD;
+  A{Create release}
+  B[Draft release created]
+  subgraph "manual" [User manual action]
+    E(Publish the release)
+  end
+  F["The python wheels are published on <code>pypi</code>"]
+  G(Acknowledge the release)
 
-### Merge (or update) the Pull Request
+  A-->B-->manual-->F-.->G
 
-⚠️ This step is outdated.
-
-If you were dealing with a final release (e.g. ``v2.9.0``), you can merge the branch in master call it a day ;-)
-
-However if you just release a RC release:
-
-- for quickfix you can commit directly on the version branch
-
-- for bigger fix, open a PR targeting master. Once merged you can then merge back master
-  on your version branch to get the changes. Alternatively, if the master contains other
-  changes you don't want, you can cherry-pick the merge commit.
-
-Once you're happy with the changes, you can release a new RC.
-
-When you no longer have changes to add (i.e. your current RC is perfect) then you can
-do a final release and merge the version branch in master.
+  click B "https://github.com/Scille/parsec-cloud/releases?q=draft%3Atrue" "Parsec drafted releases"
+```
 
 ## Release patch version
 
-In the following we will consider we want to release version ``v2.9.1``.
+In the following we will consider we want to release version ``v2.9.1`` from `v2.9.0+dev`.
 
 ### (Re)create the version branch
 
@@ -174,8 +178,8 @@ already been done (e.g. you're planning to release ``v2.9.2``).
 Most of the time, the changes needed on the patch release are also expected to
 end up in the master branch.
 
-In this case, a main PR should be opened against master, then once merge it commits
-can be cherry-picked to create another PR against the version branch.
+In this case, a main PR should be opened against master, then once merged its commits
+can be cherry-picked to create another PR against the release branch `releases/2.9`.
 
 ### Follow the major/minor guide
 
@@ -185,7 +189,7 @@ You know the drill, creating the release:
 python misc/releaser.py build 2.9.1
 ```
 
-> From the step above, your current git branch MUST be `releases/2.9`.
+> For the step above, your current git branch MUST be `releases/2.9`.
 
 ### All done
 

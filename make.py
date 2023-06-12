@@ -232,6 +232,12 @@ COMMANDS: dict[tuple[str, ...], Union[Op, tuple[Op, ...]]] = {
             cmd="npm run build:ci",
         ),
     ),
+    ("run-testbed-server",): (
+        Cwd(SERVER_DIR),
+        Cmd(
+            cmd=f"poetry run python tests/scripts/run_testbed_server.py",
+        ),
+    ),
     # Flags used in `bindings/web/scripts/build.js`
     ("web-ci-libparsec-cargo-flags",): Echo(WEB_CI_CARGO_FLAGS),
     # Flags used in `bindings/web/scripts/build.js`
