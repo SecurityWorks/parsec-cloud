@@ -153,6 +153,8 @@ function getTitleForRoute(): string {
 
   if (route === 'settings') {
     return t('HeaderPage.titles.settings');
+  } else if (route === 'devices') {
+    return t('HeaderPage.titles.devices');
   }
   return '';
 }
@@ -222,7 +224,6 @@ function hasHistory(): boolean {
 </script>
 
 <style scoped lang="scss">
-
 .topbar {
   --background: var(--parsec-color-light-secondary-background);
   display: flex;
