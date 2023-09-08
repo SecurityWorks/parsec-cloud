@@ -15,7 +15,7 @@ use wasm_bindgen_futures::*;
 // ClientConfig
 
 #[allow(dead_code)]
-fn struct_clientconfig_js_to_rs(obj: JsValue) -> Result<libparsec::ClientConfig, JsValue> {
+fn struct_client_config_js_to_rs(obj: JsValue) -> Result<libparsec::ClientConfig, JsValue> {
     let config_dir = {
         let js_val = Reflect::get(&obj, &"configDir".into())?;
         js_val
@@ -60,7 +60,7 @@ fn struct_clientconfig_js_to_rs(obj: JsValue) -> Result<libparsec::ClientConfig,
     };
     let workspace_storage_cache_size = {
         let js_val = Reflect::get(&obj, &"workspaceStorageCacheSize".into())?;
-        variant_workspacestoragecachesize_js_to_rs(js_val)?
+        variant_workspace_storage_cache_size_js_to_rs(js_val)?
     };
     Ok(libparsec::ClientConfig {
         config_dir,
@@ -71,7 +71,7 @@ fn struct_clientconfig_js_to_rs(obj: JsValue) -> Result<libparsec::ClientConfig,
 }
 
 #[allow(dead_code)]
-fn struct_clientconfig_rs_to_js(rs_obj: libparsec::ClientConfig) -> Result<JsValue, JsValue> {
+fn struct_client_config_rs_to_js(rs_obj: libparsec::ClientConfig) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     let js_config_dir = JsValue::from_str({
         let custom_to_rs_string = |path: std::path::PathBuf| -> Result<_, _> {
@@ -117,7 +117,7 @@ fn struct_clientconfig_rs_to_js(rs_obj: libparsec::ClientConfig) -> Result<JsVal
         &js_mountpoint_base_dir,
     )?;
     let js_workspace_storage_cache_size =
-        variant_workspacestoragecachesize_rs_to_js(rs_obj.workspace_storage_cache_size)?;
+        variant_workspace_storage_cache_size_rs_to_js(rs_obj.workspace_storage_cache_size)?;
     Reflect::set(
         &js_obj,
         &"workspaceStorageCacheSize".into(),
@@ -129,7 +129,7 @@ fn struct_clientconfig_rs_to_js(rs_obj: libparsec::ClientConfig) -> Result<JsVal
 // HumanHandle
 
 #[allow(dead_code)]
-fn struct_humanhandle_js_to_rs(obj: JsValue) -> Result<libparsec::HumanHandle, JsValue> {
+fn struct_human_handle_js_to_rs(obj: JsValue) -> Result<libparsec::HumanHandle, JsValue> {
     let email = {
         let js_val = Reflect::get(&obj, &"email".into())?;
         js_val
@@ -154,7 +154,7 @@ fn struct_humanhandle_js_to_rs(obj: JsValue) -> Result<libparsec::HumanHandle, J
 }
 
 #[allow(dead_code)]
-fn struct_humanhandle_rs_to_js(rs_obj: libparsec::HumanHandle) -> Result<JsValue, JsValue> {
+fn struct_human_handle_rs_to_js(rs_obj: libparsec::HumanHandle) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     let js_email = {
         let custom_getter = |obj| {
@@ -182,7 +182,7 @@ fn struct_humanhandle_rs_to_js(rs_obj: libparsec::HumanHandle) -> Result<JsValue
 // AvailableDevice
 
 #[allow(dead_code)]
-fn struct_availabledevice_js_to_rs(obj: JsValue) -> Result<libparsec::AvailableDevice, JsValue> {
+fn struct_available_device_js_to_rs(obj: JsValue) -> Result<libparsec::AvailableDevice, JsValue> {
     let key_file_path = {
         let js_val = Reflect::get(&obj, &"keyFilePath".into())?;
         js_val
@@ -222,7 +222,7 @@ fn struct_availabledevice_js_to_rs(obj: JsValue) -> Result<libparsec::AvailableD
         if js_val.is_null() {
             None
         } else {
-            Some(struct_humanhandle_js_to_rs(js_val)?)
+            Some(struct_human_handle_js_to_rs(js_val)?)
         }
     };
     let device_label = {
@@ -251,7 +251,7 @@ fn struct_availabledevice_js_to_rs(obj: JsValue) -> Result<libparsec::AvailableD
     };
     let ty = {
         let js_val = Reflect::get(&obj, &"ty".into())?;
-        variant_devicefiletype_js_to_rs(js_val)?
+        variant_device_file_type_js_to_rs(js_val)?
     };
     Ok(libparsec::AvailableDevice {
         key_file_path,
@@ -265,7 +265,9 @@ fn struct_availabledevice_js_to_rs(obj: JsValue) -> Result<libparsec::AvailableD
 }
 
 #[allow(dead_code)]
-fn struct_availabledevice_rs_to_js(rs_obj: libparsec::AvailableDevice) -> Result<JsValue, JsValue> {
+fn struct_available_device_rs_to_js(
+    rs_obj: libparsec::AvailableDevice,
+) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     let js_key_file_path = JsValue::from_str({
         let custom_to_rs_string = |path: std::path::PathBuf| -> Result<_, _> {
@@ -285,7 +287,7 @@ fn struct_availabledevice_rs_to_js(rs_obj: libparsec::AvailableDevice) -> Result
     let js_device_id = JsValue::from_str(rs_obj.device_id.as_ref());
     Reflect::set(&js_obj, &"deviceId".into(), &js_device_id)?;
     let js_human_handle = match rs_obj.human_handle {
-        Some(val) => struct_humanhandle_rs_to_js(val)?,
+        Some(val) => struct_human_handle_rs_to_js(val)?,
         None => JsValue::NULL,
     };
     Reflect::set(&js_obj, &"humanHandle".into(), &js_human_handle)?;
@@ -296,7 +298,7 @@ fn struct_availabledevice_rs_to_js(rs_obj: libparsec::AvailableDevice) -> Result
     Reflect::set(&js_obj, &"deviceLabel".into(), &js_device_label)?;
     let js_slug = rs_obj.slug.into();
     Reflect::set(&js_obj, &"slug".into(), &js_slug)?;
-    let js_ty = variant_devicefiletype_rs_to_js(rs_obj.ty)?;
+    let js_ty = variant_device_file_type_rs_to_js(rs_obj.ty)?;
     Reflect::set(&js_obj, &"ty".into(), &js_ty)?;
     Ok(js_obj)
 }
@@ -304,7 +306,7 @@ fn struct_availabledevice_rs_to_js(rs_obj: libparsec::AvailableDevice) -> Result
 // UserClaimInProgress1Info
 
 #[allow(dead_code)]
-fn struct_userclaiminprogress1info_js_to_rs(
+fn struct_user_claim_in_progress1_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserClaimInProgress1Info, JsValue> {
     let handle = {
@@ -358,7 +360,7 @@ fn struct_userclaiminprogress1info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_userclaiminprogress1info_rs_to_js(
+fn struct_user_claim_in_progress1_info_rs_to_js(
     rs_obj: libparsec::UserClaimInProgress1Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -386,7 +388,7 @@ fn struct_userclaiminprogress1info_rs_to_js(
 // DeviceClaimInProgress1Info
 
 #[allow(dead_code)]
-fn struct_deviceclaiminprogress1info_js_to_rs(
+fn struct_device_claim_in_progress1_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceClaimInProgress1Info, JsValue> {
     let handle = {
@@ -440,7 +442,7 @@ fn struct_deviceclaiminprogress1info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_deviceclaiminprogress1info_rs_to_js(
+fn struct_device_claim_in_progress1_info_rs_to_js(
     rs_obj: libparsec::DeviceClaimInProgress1Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -468,7 +470,7 @@ fn struct_deviceclaiminprogress1info_rs_to_js(
 // UserClaimInProgress2Info
 
 #[allow(dead_code)]
-fn struct_userclaiminprogress2info_js_to_rs(
+fn struct_user_claim_in_progress2_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserClaimInProgress2Info, JsValue> {
     let handle = {
@@ -501,7 +503,7 @@ fn struct_userclaiminprogress2info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_userclaiminprogress2info_rs_to_js(
+fn struct_user_claim_in_progress2_info_rs_to_js(
     rs_obj: libparsec::UserClaimInProgress2Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -515,7 +517,7 @@ fn struct_userclaiminprogress2info_rs_to_js(
 // DeviceClaimInProgress2Info
 
 #[allow(dead_code)]
-fn struct_deviceclaiminprogress2info_js_to_rs(
+fn struct_device_claim_in_progress2_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceClaimInProgress2Info, JsValue> {
     let handle = {
@@ -548,7 +550,7 @@ fn struct_deviceclaiminprogress2info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_deviceclaiminprogress2info_rs_to_js(
+fn struct_device_claim_in_progress2_info_rs_to_js(
     rs_obj: libparsec::DeviceClaimInProgress2Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -562,7 +564,7 @@ fn struct_deviceclaiminprogress2info_rs_to_js(
 // UserClaimInProgress3Info
 
 #[allow(dead_code)]
-fn struct_userclaiminprogress3info_js_to_rs(
+fn struct_user_claim_in_progress3_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserClaimInProgress3Info, JsValue> {
     let handle = {
@@ -582,7 +584,7 @@ fn struct_userclaiminprogress3info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_userclaiminprogress3info_rs_to_js(
+fn struct_user_claim_in_progress3_info_rs_to_js(
     rs_obj: libparsec::UserClaimInProgress3Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -594,7 +596,7 @@ fn struct_userclaiminprogress3info_rs_to_js(
 // DeviceClaimInProgress3Info
 
 #[allow(dead_code)]
-fn struct_deviceclaiminprogress3info_js_to_rs(
+fn struct_device_claim_in_progress3_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceClaimInProgress3Info, JsValue> {
     let handle = {
@@ -614,7 +616,7 @@ fn struct_deviceclaiminprogress3info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_deviceclaiminprogress3info_rs_to_js(
+fn struct_device_claim_in_progress3_info_rs_to_js(
     rs_obj: libparsec::DeviceClaimInProgress3Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -626,7 +628,7 @@ fn struct_deviceclaiminprogress3info_rs_to_js(
 // UserClaimFinalizeInfo
 
 #[allow(dead_code)]
-fn struct_userclaimfinalizeinfo_js_to_rs(
+fn struct_user_claim_finalize_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserClaimFinalizeInfo, JsValue> {
     let handle = {
@@ -646,7 +648,7 @@ fn struct_userclaimfinalizeinfo_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_userclaimfinalizeinfo_rs_to_js(
+fn struct_user_claim_finalize_info_rs_to_js(
     rs_obj: libparsec::UserClaimFinalizeInfo,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -658,7 +660,7 @@ fn struct_userclaimfinalizeinfo_rs_to_js(
 // DeviceClaimFinalizeInfo
 
 #[allow(dead_code)]
-fn struct_deviceclaimfinalizeinfo_js_to_rs(
+fn struct_device_claim_finalize_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceClaimFinalizeInfo, JsValue> {
     let handle = {
@@ -678,7 +680,7 @@ fn struct_deviceclaimfinalizeinfo_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_deviceclaimfinalizeinfo_rs_to_js(
+fn struct_device_claim_finalize_info_rs_to_js(
     rs_obj: libparsec::DeviceClaimFinalizeInfo,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -690,7 +692,7 @@ fn struct_deviceclaimfinalizeinfo_rs_to_js(
 // UserGreetInitialInfo
 
 #[allow(dead_code)]
-fn struct_usergreetinitialinfo_js_to_rs(
+fn struct_user_greet_initial_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserGreetInitialInfo, JsValue> {
     let handle = {
@@ -710,7 +712,7 @@ fn struct_usergreetinitialinfo_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_usergreetinitialinfo_rs_to_js(
+fn struct_user_greet_initial_info_rs_to_js(
     rs_obj: libparsec::UserGreetInitialInfo,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -722,7 +724,7 @@ fn struct_usergreetinitialinfo_rs_to_js(
 // DeviceGreetInitialInfo
 
 #[allow(dead_code)]
-fn struct_devicegreetinitialinfo_js_to_rs(
+fn struct_device_greet_initial_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceGreetInitialInfo, JsValue> {
     let handle = {
@@ -742,7 +744,7 @@ fn struct_devicegreetinitialinfo_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_devicegreetinitialinfo_rs_to_js(
+fn struct_device_greet_initial_info_rs_to_js(
     rs_obj: libparsec::DeviceGreetInitialInfo,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -754,7 +756,7 @@ fn struct_devicegreetinitialinfo_rs_to_js(
 // UserGreetInProgress1Info
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress1info_js_to_rs(
+fn struct_user_greet_in_progress1_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserGreetInProgress1Info, JsValue> {
     let handle = {
@@ -787,7 +789,7 @@ fn struct_usergreetinprogress1info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress1info_rs_to_js(
+fn struct_user_greet_in_progress1_info_rs_to_js(
     rs_obj: libparsec::UserGreetInProgress1Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -801,7 +803,7 @@ fn struct_usergreetinprogress1info_rs_to_js(
 // DeviceGreetInProgress1Info
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress1info_js_to_rs(
+fn struct_device_greet_in_progress1_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceGreetInProgress1Info, JsValue> {
     let handle = {
@@ -834,7 +836,7 @@ fn struct_devicegreetinprogress1info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress1info_rs_to_js(
+fn struct_device_greet_in_progress1_info_rs_to_js(
     rs_obj: libparsec::DeviceGreetInProgress1Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -848,7 +850,7 @@ fn struct_devicegreetinprogress1info_rs_to_js(
 // UserGreetInProgress2Info
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress2info_js_to_rs(
+fn struct_user_greet_in_progress2_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserGreetInProgress2Info, JsValue> {
     let handle = {
@@ -902,7 +904,7 @@ fn struct_usergreetinprogress2info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress2info_rs_to_js(
+fn struct_user_greet_in_progress2_info_rs_to_js(
     rs_obj: libparsec::UserGreetInProgress2Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -930,7 +932,7 @@ fn struct_usergreetinprogress2info_rs_to_js(
 // DeviceGreetInProgress2Info
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress2info_js_to_rs(
+fn struct_device_greet_in_progress2_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceGreetInProgress2Info, JsValue> {
     let handle = {
@@ -984,7 +986,7 @@ fn struct_devicegreetinprogress2info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress2info_rs_to_js(
+fn struct_device_greet_in_progress2_info_rs_to_js(
     rs_obj: libparsec::DeviceGreetInProgress2Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1012,7 +1014,7 @@ fn struct_devicegreetinprogress2info_rs_to_js(
 // UserGreetInProgress3Info
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress3info_js_to_rs(
+fn struct_user_greet_in_progress3_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserGreetInProgress3Info, JsValue> {
     let handle = {
@@ -1032,7 +1034,7 @@ fn struct_usergreetinprogress3info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress3info_rs_to_js(
+fn struct_user_greet_in_progress3_info_rs_to_js(
     rs_obj: libparsec::UserGreetInProgress3Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1044,7 +1046,7 @@ fn struct_usergreetinprogress3info_rs_to_js(
 // DeviceGreetInProgress3Info
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress3info_js_to_rs(
+fn struct_device_greet_in_progress3_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceGreetInProgress3Info, JsValue> {
     let handle = {
@@ -1064,7 +1066,7 @@ fn struct_devicegreetinprogress3info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress3info_rs_to_js(
+fn struct_device_greet_in_progress3_info_rs_to_js(
     rs_obj: libparsec::DeviceGreetInProgress3Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1076,7 +1078,7 @@ fn struct_devicegreetinprogress3info_rs_to_js(
 // UserGreetInProgress4Info
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress4info_js_to_rs(
+fn struct_user_greet_in_progress4_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserGreetInProgress4Info, JsValue> {
     let handle = {
@@ -1097,7 +1099,7 @@ fn struct_usergreetinprogress4info_js_to_rs(
         if js_val.is_null() {
             None
         } else {
-            Some(struct_humanhandle_js_to_rs(js_val)?)
+            Some(struct_human_handle_js_to_rs(js_val)?)
         }
     };
     let requested_device_label = {
@@ -1124,14 +1126,14 @@ fn struct_usergreetinprogress4info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_usergreetinprogress4info_rs_to_js(
+fn struct_user_greet_in_progress4_info_rs_to_js(
     rs_obj: libparsec::UserGreetInProgress4Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     let js_handle = JsValue::from(rs_obj.handle);
     Reflect::set(&js_obj, &"handle".into(), &js_handle)?;
     let js_requested_human_handle = match rs_obj.requested_human_handle {
-        Some(val) => struct_humanhandle_rs_to_js(val)?,
+        Some(val) => struct_human_handle_rs_to_js(val)?,
         None => JsValue::NULL,
     };
     Reflect::set(
@@ -1154,7 +1156,7 @@ fn struct_usergreetinprogress4info_rs_to_js(
 // DeviceGreetInProgress4Info
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress4info_js_to_rs(
+fn struct_device_greet_in_progress4_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceGreetInProgress4Info, JsValue> {
     let handle = {
@@ -1193,7 +1195,7 @@ fn struct_devicegreetinprogress4info_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn struct_devicegreetinprogress4info_rs_to_js(
+fn struct_device_greet_in_progress4_info_rs_to_js(
     rs_obj: libparsec::DeviceGreetInProgress4Info,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1214,7 +1216,7 @@ fn struct_devicegreetinprogress4info_rs_to_js(
 // CancelError
 
 #[allow(dead_code)]
-fn variant_cancelerror_rs_to_js(rs_obj: libparsec::CancelError) -> Result<JsValue, JsValue> {
+fn variant_cancel_error_rs_to_js(rs_obj: libparsec::CancelError) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     let js_display = &rs_obj.to_string();
     Reflect::set(&js_obj, &"error".into(), &js_display.into())?;
@@ -1232,7 +1234,7 @@ fn variant_cancelerror_rs_to_js(rs_obj: libparsec::CancelError) -> Result<JsValu
 // RealmRole
 
 #[allow(dead_code)]
-fn variant_realmrole_js_to_rs(obj: JsValue) -> Result<libparsec::RealmRole, JsValue> {
+fn variant_realm_role_js_to_rs(obj: JsValue) -> Result<libparsec::RealmRole, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
     match tag {
         tag if tag == JsValue::from_str("Contributor") => Ok(libparsec::RealmRole::Contributor {}),
@@ -1244,7 +1246,7 @@ fn variant_realmrole_js_to_rs(obj: JsValue) -> Result<libparsec::RealmRole, JsVa
 }
 
 #[allow(dead_code)]
-fn variant_realmrole_rs_to_js(rs_obj: libparsec::RealmRole) -> Result<JsValue, JsValue> {
+fn variant_realm_role_rs_to_js(rs_obj: libparsec::RealmRole) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     match rs_obj {
         libparsec::RealmRole::Contributor { .. } => {
@@ -1266,7 +1268,7 @@ fn variant_realmrole_rs_to_js(rs_obj: libparsec::RealmRole) -> Result<JsValue, J
 // DeviceAccessStrategy
 
 #[allow(dead_code)]
-fn variant_deviceaccessstrategy_js_to_rs(
+fn variant_device_access_strategy_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceAccessStrategy, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
@@ -1328,7 +1330,7 @@ fn variant_deviceaccessstrategy_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn variant_deviceaccessstrategy_rs_to_js(
+fn variant_device_access_strategy_rs_to_js(
     rs_obj: libparsec::DeviceAccessStrategy,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1376,7 +1378,7 @@ fn variant_deviceaccessstrategy_rs_to_js(
 // ClientStartError
 
 #[allow(dead_code)]
-fn variant_clientstarterror_rs_to_js(
+fn variant_client_start_error_rs_to_js(
     rs_obj: libparsec::ClientStartError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1402,7 +1404,7 @@ fn variant_clientstarterror_rs_to_js(
 // ClientStopError
 
 #[allow(dead_code)]
-fn variant_clientstoperror_rs_to_js(
+fn variant_client_stop_error_rs_to_js(
     rs_obj: libparsec::ClientStopError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1419,7 +1421,7 @@ fn variant_clientstoperror_rs_to_js(
 // ClientListWorkspacesError
 
 #[allow(dead_code)]
-fn variant_clientlistworkspaceserror_rs_to_js(
+fn variant_client_list_workspaces_error_rs_to_js(
     rs_obj: libparsec::ClientListWorkspacesError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1436,7 +1438,7 @@ fn variant_clientlistworkspaceserror_rs_to_js(
 // ClientWorkspaceCreateError
 
 #[allow(dead_code)]
-fn variant_clientworkspacecreateerror_rs_to_js(
+fn variant_client_workspace_create_error_rs_to_js(
     rs_obj: libparsec::ClientWorkspaceCreateError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1453,7 +1455,7 @@ fn variant_clientworkspacecreateerror_rs_to_js(
 // ClientWorkspaceRenameError
 
 #[allow(dead_code)]
-fn variant_clientworkspacerenameerror_rs_to_js(
+fn variant_client_workspace_rename_error_rs_to_js(
     rs_obj: libparsec::ClientWorkspaceRenameError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1473,7 +1475,7 @@ fn variant_clientworkspacerenameerror_rs_to_js(
 // ClientWorkspaceShareError
 
 #[allow(dead_code)]
-fn variant_clientworkspaceshareerror_rs_to_js(
+fn variant_client_workspace_share_error_rs_to_js(
     rs_obj: libparsec::ClientWorkspaceShareError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1570,7 +1572,7 @@ fn variant_clientworkspaceshareerror_rs_to_js(
 // UserProfile
 
 #[allow(dead_code)]
-fn variant_userprofile_js_to_rs(obj: JsValue) -> Result<libparsec::UserProfile, JsValue> {
+fn variant_user_profile_js_to_rs(obj: JsValue) -> Result<libparsec::UserProfile, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
     match tag {
         tag if tag == JsValue::from_str("Admin") => Ok(libparsec::UserProfile::Admin {}),
@@ -1581,7 +1583,7 @@ fn variant_userprofile_js_to_rs(obj: JsValue) -> Result<libparsec::UserProfile, 
 }
 
 #[allow(dead_code)]
-fn variant_userprofile_rs_to_js(rs_obj: libparsec::UserProfile) -> Result<JsValue, JsValue> {
+fn variant_user_profile_rs_to_js(rs_obj: libparsec::UserProfile) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     match rs_obj {
         libparsec::UserProfile::Admin { .. } => {
@@ -1600,7 +1602,7 @@ fn variant_userprofile_rs_to_js(rs_obj: libparsec::UserProfile) -> Result<JsValu
 // WorkspaceStorageCacheSize
 
 #[allow(dead_code)]
-fn variant_workspacestoragecachesize_js_to_rs(
+fn variant_workspace_storage_cache_size_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::WorkspaceStorageCacheSize, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
@@ -1631,7 +1633,7 @@ fn variant_workspacestoragecachesize_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn variant_workspacestoragecachesize_rs_to_js(
+fn variant_workspace_storage_cache_size_rs_to_js(
     rs_obj: libparsec::WorkspaceStorageCacheSize,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1651,7 +1653,7 @@ fn variant_workspacestoragecachesize_rs_to_js(
 // ClientEvent
 
 #[allow(dead_code)]
-fn variant_clientevent_js_to_rs(obj: JsValue) -> Result<libparsec::ClientEvent, JsValue> {
+fn variant_client_event_js_to_rs(obj: JsValue) -> Result<libparsec::ClientEvent, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
     match tag {
         tag if tag == JsValue::from_str("Ping") => {
@@ -1670,7 +1672,7 @@ fn variant_clientevent_js_to_rs(obj: JsValue) -> Result<libparsec::ClientEvent, 
 }
 
 #[allow(dead_code)]
-fn variant_clientevent_rs_to_js(rs_obj: libparsec::ClientEvent) -> Result<JsValue, JsValue> {
+fn variant_client_event_rs_to_js(rs_obj: libparsec::ClientEvent) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     match rs_obj {
         libparsec::ClientEvent::Ping { ping, .. } => {
@@ -1685,7 +1687,7 @@ fn variant_clientevent_rs_to_js(rs_obj: libparsec::ClientEvent) -> Result<JsValu
 // ClaimerGreeterAbortOperationError
 
 #[allow(dead_code)]
-fn variant_claimergreeterabortoperationerror_rs_to_js(
+fn variant_claimer_greeter_abort_operation_error_rs_to_js(
     rs_obj: libparsec::ClaimerGreeterAbortOperationError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1702,7 +1704,7 @@ fn variant_claimergreeterabortoperationerror_rs_to_js(
 // DeviceFileType
 
 #[allow(dead_code)]
-fn variant_devicefiletype_js_to_rs(obj: JsValue) -> Result<libparsec::DeviceFileType, JsValue> {
+fn variant_device_file_type_js_to_rs(obj: JsValue) -> Result<libparsec::DeviceFileType, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
     match tag {
         tag if tag == JsValue::from_str("Password") => Ok(libparsec::DeviceFileType::Password {}),
@@ -1715,7 +1717,9 @@ fn variant_devicefiletype_js_to_rs(obj: JsValue) -> Result<libparsec::DeviceFile
 }
 
 #[allow(dead_code)]
-fn variant_devicefiletype_rs_to_js(rs_obj: libparsec::DeviceFileType) -> Result<JsValue, JsValue> {
+fn variant_device_file_type_rs_to_js(
+    rs_obj: libparsec::DeviceFileType,
+) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     match rs_obj {
         libparsec::DeviceFileType::Password { .. } => {
@@ -1734,7 +1738,7 @@ fn variant_devicefiletype_rs_to_js(rs_obj: libparsec::DeviceFileType) -> Result<
 // DeviceSaveStrategy
 
 #[allow(dead_code)]
-fn variant_devicesavestrategy_js_to_rs(
+fn variant_device_save_strategy_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::DeviceSaveStrategy, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
@@ -1766,7 +1770,7 @@ fn variant_devicesavestrategy_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn variant_devicesavestrategy_rs_to_js(
+fn variant_device_save_strategy_rs_to_js(
     rs_obj: libparsec::DeviceSaveStrategy,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1786,7 +1790,7 @@ fn variant_devicesavestrategy_rs_to_js(
 // BootstrapOrganizationError
 
 #[allow(dead_code)]
-fn variant_bootstraporganizationerror_rs_to_js(
+fn variant_bootstrap_organization_error_rs_to_js(
     rs_obj: libparsec::BootstrapOrganizationError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1860,7 +1864,7 @@ fn variant_bootstraporganizationerror_rs_to_js(
 // ClaimerRetrieveInfoError
 
 #[allow(dead_code)]
-fn variant_claimerretrieveinfoerror_rs_to_js(
+fn variant_claimer_retrieve_info_error_rs_to_js(
     rs_obj: libparsec::ClaimerRetrieveInfoError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1886,7 +1890,7 @@ fn variant_claimerretrieveinfoerror_rs_to_js(
 // ClaimInProgressError
 
 #[allow(dead_code)]
-fn variant_claiminprogresserror_rs_to_js(
+fn variant_claim_in_progress_error_rs_to_js(
     rs_obj: libparsec::ClaimInProgressError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -1924,7 +1928,7 @@ fn variant_claiminprogresserror_rs_to_js(
 // UserOrDeviceClaimInitialInfo
 
 #[allow(dead_code)]
-fn variant_userordeviceclaiminitialinfo_js_to_rs(
+fn variant_user_or_device_claim_initial_info_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::UserOrDeviceClaimInitialInfo, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
@@ -1958,7 +1962,7 @@ fn variant_userordeviceclaiminitialinfo_js_to_rs(
                 if js_val.is_null() {
                     None
                 } else {
-                    Some(struct_humanhandle_js_to_rs(js_val)?)
+                    Some(struct_human_handle_js_to_rs(js_val)?)
                 }
             };
             Ok(libparsec::UserOrDeviceClaimInitialInfo::Device {
@@ -2004,7 +2008,7 @@ fn variant_userordeviceclaiminitialinfo_js_to_rs(
                 if js_val.is_null() {
                     None
                 } else {
-                    Some(struct_humanhandle_js_to_rs(js_val)?)
+                    Some(struct_human_handle_js_to_rs(js_val)?)
                 }
             };
             Ok(libparsec::UserOrDeviceClaimInitialInfo::User {
@@ -2021,7 +2025,7 @@ fn variant_userordeviceclaiminitialinfo_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn variant_userordeviceclaiminitialinfo_rs_to_js(
+fn variant_user_or_device_claim_initial_info_rs_to_js(
     rs_obj: libparsec::UserOrDeviceClaimInitialInfo,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2038,7 +2042,7 @@ fn variant_userordeviceclaiminitialinfo_rs_to_js(
             let js_greeter_user_id = JsValue::from_str(greeter_user_id.as_ref());
             Reflect::set(&js_obj, &"greeterUserId".into(), &js_greeter_user_id)?;
             let js_greeter_human_handle = match greeter_human_handle {
-                Some(val) => struct_humanhandle_rs_to_js(val)?,
+                Some(val) => struct_human_handle_rs_to_js(val)?,
                 None => JsValue::NULL,
             };
             Reflect::set(
@@ -2062,7 +2066,7 @@ fn variant_userordeviceclaiminitialinfo_rs_to_js(
             let js_greeter_user_id = JsValue::from_str(greeter_user_id.as_ref());
             Reflect::set(&js_obj, &"greeterUserId".into(), &js_greeter_user_id)?;
             let js_greeter_human_handle = match greeter_human_handle {
-                Some(val) => struct_humanhandle_rs_to_js(val)?,
+                Some(val) => struct_human_handle_rs_to_js(val)?,
                 None => JsValue::NULL,
             };
             Reflect::set(
@@ -2078,7 +2082,9 @@ fn variant_userordeviceclaiminitialinfo_rs_to_js(
 // InvitationStatus
 
 #[allow(dead_code)]
-fn variant_invitationstatus_js_to_rs(obj: JsValue) -> Result<libparsec::InvitationStatus, JsValue> {
+fn variant_invitation_status_js_to_rs(
+    obj: JsValue,
+) -> Result<libparsec::InvitationStatus, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
     match tag {
         tag if tag == JsValue::from_str("Deleted") => Ok(libparsec::InvitationStatus::Deleted {}),
@@ -2091,7 +2097,7 @@ fn variant_invitationstatus_js_to_rs(obj: JsValue) -> Result<libparsec::Invitati
 }
 
 #[allow(dead_code)]
-fn variant_invitationstatus_rs_to_js(
+fn variant_invitation_status_rs_to_js(
     rs_obj: libparsec::InvitationStatus,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2112,7 +2118,7 @@ fn variant_invitationstatus_rs_to_js(
 // InvitationEmailSentStatus
 
 #[allow(dead_code)]
-fn variant_invitationemailsentstatus_js_to_rs(
+fn variant_invitation_email_sent_status_js_to_rs(
     obj: JsValue,
 ) -> Result<libparsec::InvitationEmailSentStatus, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
@@ -2133,7 +2139,7 @@ fn variant_invitationemailsentstatus_js_to_rs(
 }
 
 #[allow(dead_code)]
-fn variant_invitationemailsentstatus_rs_to_js(
+fn variant_invitation_email_sent_status_rs_to_js(
     rs_obj: libparsec::InvitationEmailSentStatus,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2154,7 +2160,7 @@ fn variant_invitationemailsentstatus_rs_to_js(
 // NewUserInvitationError
 
 #[allow(dead_code)]
-fn variant_newuserinvitationerror_rs_to_js(
+fn variant_new_user_invitation_error_rs_to_js(
     rs_obj: libparsec::NewUserInvitationError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2180,7 +2186,7 @@ fn variant_newuserinvitationerror_rs_to_js(
 // NewDeviceInvitationError
 
 #[allow(dead_code)]
-fn variant_newdeviceinvitationerror_rs_to_js(
+fn variant_new_device_invitation_error_rs_to_js(
     rs_obj: libparsec::NewDeviceInvitationError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2207,7 +2213,7 @@ fn variant_newdeviceinvitationerror_rs_to_js(
 // DeleteInvitationError
 
 #[allow(dead_code)]
-fn variant_deleteinvitationerror_rs_to_js(
+fn variant_delete_invitation_error_rs_to_js(
     rs_obj: libparsec::DeleteInvitationError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2233,7 +2239,7 @@ fn variant_deleteinvitationerror_rs_to_js(
 // InviteListItem
 
 #[allow(dead_code)]
-fn variant_invitelistitem_js_to_rs(obj: JsValue) -> Result<libparsec::InviteListItem, JsValue> {
+fn variant_invite_list_item_js_to_rs(obj: JsValue) -> Result<libparsec::InviteListItem, JsValue> {
     let tag = Reflect::get(&obj, &"tag".into())?;
     match tag {
         tag if tag == JsValue::from_str("Device") => {
@@ -2271,7 +2277,7 @@ fn variant_invitelistitem_js_to_rs(obj: JsValue) -> Result<libparsec::InviteList
             };
             let status = {
                 let js_val = Reflect::get(&obj, &"status".into())?;
-                variant_invitationstatus_js_to_rs(js_val)?
+                variant_invitation_status_js_to_rs(js_val)?
             };
             Ok(libparsec::InviteListItem::Device {
                 token,
@@ -2322,7 +2328,7 @@ fn variant_invitelistitem_js_to_rs(obj: JsValue) -> Result<libparsec::InviteList
             };
             let status = {
                 let js_val = Reflect::get(&obj, &"status".into())?;
-                variant_invitationstatus_js_to_rs(js_val)?
+                variant_invitation_status_js_to_rs(js_val)?
             };
             Ok(libparsec::InviteListItem::User {
                 token,
@@ -2338,7 +2344,9 @@ fn variant_invitelistitem_js_to_rs(obj: JsValue) -> Result<libparsec::InviteList
 }
 
 #[allow(dead_code)]
-fn variant_invitelistitem_rs_to_js(rs_obj: libparsec::InviteListItem) -> Result<JsValue, JsValue> {
+fn variant_invite_list_item_rs_to_js(
+    rs_obj: libparsec::InviteListItem,
+) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
     match rs_obj {
         libparsec::InviteListItem::Device {
@@ -2370,7 +2378,7 @@ fn variant_invitelistitem_rs_to_js(rs_obj: libparsec::InviteListItem) -> Result<
                 .as_ref()
             });
             Reflect::set(&js_obj, &"createdOn".into(), &js_created_on)?;
-            let js_status = variant_invitationstatus_rs_to_js(status)?;
+            let js_status = variant_invitation_status_rs_to_js(status)?;
             Reflect::set(&js_obj, &"status".into(), &js_status)?;
         }
         libparsec::InviteListItem::User {
@@ -2405,7 +2413,7 @@ fn variant_invitelistitem_rs_to_js(rs_obj: libparsec::InviteListItem) -> Result<
             Reflect::set(&js_obj, &"createdOn".into(), &js_created_on)?;
             let js_claimer_email = claimer_email.into();
             Reflect::set(&js_obj, &"claimerEmail".into(), &js_claimer_email)?;
-            let js_status = variant_invitationstatus_rs_to_js(status)?;
+            let js_status = variant_invitation_status_rs_to_js(status)?;
             Reflect::set(&js_obj, &"status".into(), &js_status)?;
         }
     }
@@ -2415,7 +2423,7 @@ fn variant_invitelistitem_rs_to_js(rs_obj: libparsec::InviteListItem) -> Result<
 // ListInvitationsError
 
 #[allow(dead_code)]
-fn variant_listinvitationserror_rs_to_js(
+fn variant_list_invitations_error_rs_to_js(
     rs_obj: libparsec::ListInvitationsError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2435,7 +2443,7 @@ fn variant_listinvitationserror_rs_to_js(
 // ClientStartInvitationGreetError
 
 #[allow(dead_code)]
-fn variant_clientstartinvitationgreeterror_rs_to_js(
+fn variant_client_start_invitation_greet_error_rs_to_js(
     rs_obj: libparsec::ClientStartInvitationGreetError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2452,7 +2460,7 @@ fn variant_clientstartinvitationgreeterror_rs_to_js(
 // GreetInProgressError
 
 #[allow(dead_code)]
-fn variant_greetinprogresserror_rs_to_js(
+fn variant_greet_in_progress_error_rs_to_js(
     rs_obj: libparsec::GreetInProgressError,
 ) -> Result<JsValue, JsValue> {
     let js_obj = Object::new().into();
@@ -2598,7 +2606,7 @@ pub fn cancel(canceller: u32) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_cancelerror_rs_to_js(err)?;
+                let js_err = variant_cancel_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2622,19 +2630,19 @@ pub fn newCanceller() -> Promise {
 pub fn clientStart(config: Object, on_event_callback: Function, access: Object) -> Promise {
     future_to_promise(async move {
         let config = config.into();
-        let config = struct_clientconfig_js_to_rs(config)?;
+        let config = struct_client_config_js_to_rs(config)?;
 
         let on_event_callback = std::sync::Arc::new(move |event: libparsec::ClientEvent| {
             // TODO: Better error handling here (log error ?)
             let js_event =
-                variant_clientevent_rs_to_js(event).expect("event type conversion error");
+                variant_client_event_rs_to_js(event).expect("event type conversion error");
             on_event_callback
                 .call1(&JsValue::NULL, &js_event)
                 .expect("error in event callback");
         }) as std::sync::Arc<dyn Fn(libparsec::ClientEvent)>;
 
         let access = access.into();
-        let access = variant_deviceaccessstrategy_js_to_rs(access)?;
+        let access = variant_device_access_strategy_js_to_rs(access)?;
 
         let ret = libparsec::client_start(config, on_event_callback, access).await;
         Ok(match ret {
@@ -2648,7 +2656,7 @@ pub fn clientStart(config: Object, on_event_callback: Function, access: Object) 
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientstarterror_rs_to_js(err)?;
+                let js_err = variant_client_start_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2676,7 +2684,7 @@ pub fn clientStop(client: u32) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientstoperror_rs_to_js(err)?;
+                let js_err = variant_client_stop_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2729,7 +2737,7 @@ pub fn clientListWorkspaces(client: u32) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientlistworkspaceserror_rs_to_js(err)?;
+                let js_err = variant_client_list_workspaces_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2768,7 +2776,7 @@ pub fn clientWorkspaceCreate(client: u32, name: String) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientworkspacecreateerror_rs_to_js(err)?;
+                let js_err = variant_client_workspace_create_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2808,7 +2816,7 @@ pub fn clientWorkspaceRename(client: u32, realm_id: String, new_name: String) ->
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientworkspacerenameerror_rs_to_js(err)?;
+                let js_err = variant_client_workspace_rename_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2839,7 +2847,7 @@ pub fn clientWorkspaceShare(
         let role = match role {
             Some(role) => {
                 let role = role.into();
-                let role = variant_realmrole_js_to_rs(role)?;
+                let role = variant_realm_role_js_to_rs(role)?;
 
                 Some(role)
             }
@@ -2861,7 +2869,7 @@ pub fn clientWorkspaceShare(
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientworkspaceshareerror_rs_to_js(err)?;
+                let js_err = variant_client_workspace_share_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2889,7 +2897,7 @@ pub fn claimerGreeterAbortOperation(handle: u32) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claimergreeterabortoperationerror_rs_to_js(err)?;
+                let js_err = variant_claimer_greeter_abort_operation_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -2913,7 +2921,7 @@ pub fn listAvailableDevices(path: String) -> Promise {
             // Array::new_with_length allocates with `undefined` value, that's why we `set` value
             let js_array = Array::new_with_length(ret.len() as u32);
             for (i, elem) in ret.into_iter().enumerate() {
-                let js_elem = struct_availabledevice_rs_to_js(elem)?;
+                let js_elem = struct_available_device_rs_to_js(elem)?;
                 js_array.set(i as u32, js_elem);
             }
             js_array.into()
@@ -2935,12 +2943,12 @@ pub fn bootstrapOrganization(
 ) -> Promise {
     future_to_promise(async move {
         let config = config.into();
-        let config = struct_clientconfig_js_to_rs(config)?;
+        let config = struct_client_config_js_to_rs(config)?;
 
         let on_event_callback = std::sync::Arc::new(move |event: libparsec::ClientEvent| {
             // TODO: Better error handling here (log error ?)
             let js_event =
-                variant_clientevent_rs_to_js(event).expect("event type conversion error");
+                variant_client_event_rs_to_js(event).expect("event type conversion error");
             on_event_callback
                 .call1(&JsValue::NULL, &js_event)
                 .expect("error in event callback");
@@ -2954,12 +2962,12 @@ pub fn bootstrapOrganization(
                 .map_err(|e| TypeError::new(e.as_ref()))
         }?;
         let save_strategy = save_strategy.into();
-        let save_strategy = variant_devicesavestrategy_js_to_rs(save_strategy)?;
+        let save_strategy = variant_device_save_strategy_js_to_rs(save_strategy)?;
 
         let human_handle = match human_handle {
             Some(human_handle) => {
                 let human_handle = human_handle.into();
-                let human_handle = struct_humanhandle_js_to_rs(human_handle)?;
+                let human_handle = struct_human_handle_js_to_rs(human_handle)?;
 
                 Some(human_handle)
             }
@@ -3006,14 +3014,14 @@ pub fn bootstrapOrganization(
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_availabledevice_rs_to_js(value)?;
+                let js_value = struct_available_device_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_bootstraporganizationerror_rs_to_js(err)?;
+                let js_err = variant_bootstrap_organization_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3027,12 +3035,12 @@ pub fn bootstrapOrganization(
 pub fn claimerRetrieveInfo(config: Object, on_event_callback: Function, addr: String) -> Promise {
     future_to_promise(async move {
         let config = config.into();
-        let config = struct_clientconfig_js_to_rs(config)?;
+        let config = struct_client_config_js_to_rs(config)?;
 
         let on_event_callback = std::sync::Arc::new(move |event: libparsec::ClientEvent| {
             // TODO: Better error handling here (log error ?)
             let js_event =
-                variant_clientevent_rs_to_js(event).expect("event type conversion error");
+                variant_client_event_rs_to_js(event).expect("event type conversion error");
             on_event_callback
                 .call1(&JsValue::NULL, &js_event)
                 .expect("error in event callback");
@@ -3049,14 +3057,14 @@ pub fn claimerRetrieveInfo(config: Object, on_event_callback: Function, addr: St
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = variant_userordeviceclaiminitialinfo_rs_to_js(value)?;
+                let js_value = variant_user_or_device_claim_initial_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claimerretrieveinfoerror_rs_to_js(err)?;
+                let js_err = variant_claimer_retrieve_info_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3074,14 +3082,14 @@ pub fn claimerUserInitialDoWaitPeer(canceller: u32, handle: u32) -> Promise {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_userclaiminprogress1info_rs_to_js(value)?;
+                let js_value = struct_user_claim_in_progress1_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3099,14 +3107,14 @@ pub fn claimerDeviceInitialDoWaitPeer(canceller: u32, handle: u32) -> Promise {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_deviceclaiminprogress1info_rs_to_js(value)?;
+                let js_value = struct_device_claim_in_progress1_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3124,14 +3132,14 @@ pub fn claimerUserInProgress1DoSignifyTrust(canceller: u32, handle: u32) -> Prom
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_userclaiminprogress2info_rs_to_js(value)?;
+                let js_value = struct_user_claim_in_progress2_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3149,14 +3157,14 @@ pub fn claimerDeviceInProgress1DoSignifyTrust(canceller: u32, handle: u32) -> Pr
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_deviceclaiminprogress2info_rs_to_js(value)?;
+                let js_value = struct_device_claim_in_progress2_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3174,14 +3182,14 @@ pub fn claimerUserInProgress2DoWaitPeerTrust(canceller: u32, handle: u32) -> Pro
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_userclaiminprogress3info_rs_to_js(value)?;
+                let js_value = struct_user_claim_in_progress3_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3200,14 +3208,14 @@ pub fn claimerDeviceInProgress2DoWaitPeerTrust(canceller: u32, handle: u32) -> P
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_deviceclaiminprogress3info_rs_to_js(value)?;
+                let js_value = struct_device_claim_in_progress3_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3239,7 +3247,7 @@ pub fn claimerUserInProgress3DoClaim(
         let requested_human_handle = match requested_human_handle {
             Some(requested_human_handle) => {
                 let requested_human_handle = requested_human_handle.into();
-                let requested_human_handle = struct_humanhandle_js_to_rs(requested_human_handle)?;
+                let requested_human_handle = struct_human_handle_js_to_rs(requested_human_handle)?;
 
                 Some(requested_human_handle)
             }
@@ -3257,14 +3265,14 @@ pub fn claimerUserInProgress3DoClaim(
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_userclaimfinalizeinfo_rs_to_js(value)?;
+                let js_value = struct_user_claim_finalize_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3302,14 +3310,14 @@ pub fn claimerDeviceInProgress3DoClaim(
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_deviceclaimfinalizeinfo_rs_to_js(value)?;
+                let js_value = struct_device_claim_finalize_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3323,21 +3331,21 @@ pub fn claimerDeviceInProgress3DoClaim(
 pub fn claimerUserFinalizeSaveLocalDevice(handle: u32, save_strategy: Object) -> Promise {
     future_to_promise(async move {
         let save_strategy = save_strategy.into();
-        let save_strategy = variant_devicesavestrategy_js_to_rs(save_strategy)?;
+        let save_strategy = variant_device_save_strategy_js_to_rs(save_strategy)?;
 
         let ret = libparsec::claimer_user_finalize_save_local_device(handle, save_strategy).await;
         Ok(match ret {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_availabledevice_rs_to_js(value)?;
+                let js_value = struct_available_device_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3351,21 +3359,21 @@ pub fn claimerUserFinalizeSaveLocalDevice(handle: u32, save_strategy: Object) ->
 pub fn claimerDeviceFinalizeSaveLocalDevice(handle: u32, save_strategy: Object) -> Promise {
     future_to_promise(async move {
         let save_strategy = save_strategy.into();
-        let save_strategy = variant_devicesavestrategy_js_to_rs(save_strategy)?;
+        let save_strategy = variant_device_save_strategy_js_to_rs(save_strategy)?;
 
         let ret = libparsec::claimer_device_finalize_save_local_device(handle, save_strategy).await;
         Ok(match ret {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_availabledevice_rs_to_js(value)?;
+                let js_value = struct_available_device_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_claiminprogresserror_rs_to_js(err)?;
+                let js_err = variant_claim_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3398,7 +3406,7 @@ pub fn clientNewUserInvitation(client: u32, claimer_email: String, send_email: b
                         .as_ref()
                     });
                     js_array.push(&js_value);
-                    let js_value = variant_invitationemailsentstatus_rs_to_js(x2)?;
+                    let js_value = variant_invitation_email_sent_status_rs_to_js(x2)?;
                     js_array.push(&js_value);
                     js_array.into()
                 };
@@ -3408,7 +3416,7 @@ pub fn clientNewUserInvitation(client: u32, claimer_email: String, send_email: b
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_newuserinvitationerror_rs_to_js(err)?;
+                let js_err = variant_new_user_invitation_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3441,7 +3449,7 @@ pub fn clientNewDeviceInvitation(client: u32, send_email: bool) -> Promise {
                         .as_ref()
                     });
                     js_array.push(&js_value);
-                    let js_value = variant_invitationemailsentstatus_rs_to_js(x2)?;
+                    let js_value = variant_invitation_email_sent_status_rs_to_js(x2)?;
                     js_array.push(&js_value);
                     js_array.into()
                 };
@@ -3451,7 +3459,7 @@ pub fn clientNewDeviceInvitation(client: u32, send_email: bool) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_newdeviceinvitationerror_rs_to_js(err)?;
+                let js_err = variant_new_device_invitation_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3485,7 +3493,7 @@ pub fn clientDeleteInvitation(client: u32, token: String) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_deleteinvitationerror_rs_to_js(err)?;
+                let js_err = variant_delete_invitation_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3507,7 +3515,7 @@ pub fn clientListInvitations(client: u32) -> Promise {
                     // Array::new_with_length allocates with `undefined` value, that's why we `set` value
                     let js_array = Array::new_with_length(value.len() as u32);
                     for (i, elem) in value.into_iter().enumerate() {
-                        let js_elem = variant_invitelistitem_rs_to_js(elem)?;
+                        let js_elem = variant_invite_list_item_rs_to_js(elem)?;
                         js_array.set(i as u32, js_elem);
                     }
                     js_array.into()
@@ -3518,7 +3526,7 @@ pub fn clientListInvitations(client: u32) -> Promise {
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_listinvitationserror_rs_to_js(err)?;
+                let js_err = variant_list_invitations_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3542,14 +3550,14 @@ pub fn clientStartUserInvitationGreet(client: u32, token: String) -> Promise {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_usergreetinitialinfo_rs_to_js(value)?;
+                let js_value = struct_user_greet_initial_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientstartinvitationgreeterror_rs_to_js(err)?;
+                let js_err = variant_client_start_invitation_greet_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3573,14 +3581,14 @@ pub fn clientStartDeviceInvitationGreet(client: u32, token: String) -> Promise {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_devicegreetinitialinfo_rs_to_js(value)?;
+                let js_value = struct_device_greet_initial_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_clientstartinvitationgreeterror_rs_to_js(err)?;
+                let js_err = variant_client_start_invitation_greet_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3598,14 +3606,14 @@ pub fn greeterUserInitialDoWaitPeer(canceller: u32, handle: u32) -> Promise {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_usergreetinprogress1info_rs_to_js(value)?;
+                let js_value = struct_user_greet_in_progress1_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3623,14 +3631,14 @@ pub fn greeterDeviceInitialDoWaitPeer(canceller: u32, handle: u32) -> Promise {
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_devicegreetinprogress1info_rs_to_js(value)?;
+                let js_value = struct_device_greet_in_progress1_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3648,14 +3656,14 @@ pub fn greeterUserInProgress1DoWaitPeerTrust(canceller: u32, handle: u32) -> Pro
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_usergreetinprogress2info_rs_to_js(value)?;
+                let js_value = struct_user_greet_in_progress2_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3674,14 +3682,14 @@ pub fn greeterDeviceInProgress1DoWaitPeerTrust(canceller: u32, handle: u32) -> P
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_devicegreetinprogress2info_rs_to_js(value)?;
+                let js_value = struct_device_greet_in_progress2_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3699,14 +3707,14 @@ pub fn greeterUserInProgress2DoSignifyTrust(canceller: u32, handle: u32) -> Prom
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_usergreetinprogress3info_rs_to_js(value)?;
+                let js_value = struct_user_greet_in_progress3_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3724,14 +3732,14 @@ pub fn greeterDeviceInProgress2DoSignifyTrust(canceller: u32, handle: u32) -> Pr
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_devicegreetinprogress3info_rs_to_js(value)?;
+                let js_value = struct_device_greet_in_progress3_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3750,14 +3758,14 @@ pub fn greeterUserInProgress3DoGetClaimRequests(canceller: u32, handle: u32) -> 
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_usergreetinprogress4info_rs_to_js(value)?;
+                let js_value = struct_user_greet_in_progress4_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3776,14 +3784,14 @@ pub fn greeterDeviceInProgress3DoGetClaimRequests(canceller: u32, handle: u32) -
             Ok(value) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &true.into())?;
-                let js_value = struct_devicegreetinprogress4info_rs_to_js(value)?;
+                let js_value = struct_device_greet_in_progress4_info_rs_to_js(value)?;
                 Reflect::set(&js_obj, &"value".into(), &js_value)?;
                 js_obj
             }
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3805,7 +3813,7 @@ pub fn greeterUserInProgress4DoCreate(
         let human_handle = match human_handle {
             Some(human_handle) => {
                 let human_handle = human_handle.into();
-                let human_handle = struct_humanhandle_js_to_rs(human_handle)?;
+                let human_handle = struct_human_handle_js_to_rs(human_handle)?;
 
                 Some(human_handle)
             }
@@ -3824,7 +3832,7 @@ pub fn greeterUserInProgress4DoCreate(
         };
 
         let profile = profile.into();
-        let profile = variant_userprofile_js_to_rs(profile)?;
+        let profile = variant_user_profile_js_to_rs(profile)?;
 
         let ret = libparsec::greeter_user_in_progress_4_do_create(
             canceller,
@@ -3848,7 +3856,7 @@ pub fn greeterUserInProgress4DoCreate(
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }
@@ -3893,7 +3901,7 @@ pub fn greeterDeviceInProgress4DoCreate(
             Err(err) => {
                 let js_obj = Object::new().into();
                 Reflect::set(&js_obj, &"ok".into(), &false.into())?;
-                let js_err = variant_greetinprogresserror_rs_to_js(err)?;
+                let js_err = variant_greet_in_progress_error_rs_to_js(err)?;
                 Reflect::set(&js_obj, &"error".into(), &js_err)?;
                 js_obj
             }

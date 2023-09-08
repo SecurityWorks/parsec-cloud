@@ -10,7 +10,7 @@ from importlib import import_module
 from inspect import isclass, iscoroutinefunction, isfunction, signature
 from pathlib import Path
 from types import ModuleType
-from typing import Any, List, Tuple, Union, get_args
+from typing import Any, List, Tuple, Union, get_args, Callable
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
@@ -93,7 +93,14 @@ env = Environment(
 )
 
 
-def snake_case_to_camel_case(s: str) -> str:
+def _test_change_case_function(input: str, expected: str, func: Callable[[str], str]) -> None:
+    case = func(input)
+    assert (
+        case == expected
+    ), f"expected `{expected}` but got `{case}` (input = `{input}`, func = {func.__name__})"
+
+
+def snake_to_camel_case(s: str) -> str:
     camel = ""
     next_is_uppercase = False
     for c in s.lower():
@@ -108,20 +115,49 @@ def snake_case_to_camel_case(s: str) -> str:
     return camel
 
 
-def _test_snake_case_to_camel_case(input: str, expected: str) -> None:
-    camel_case = snake_case_to_camel_case(input)
-    assert (
-        camel_case == expected
-    ), f"expected `{expected}` but got `{camel_case}` (input = `{input}`)"
+_test_change_case_function("hello", "hello", snake_to_camel_case)
+_test_change_case_function("hello_world", "helloWorld", snake_to_camel_case)
+_test_change_case_function("Hello_world", "helloWorld", snake_to_camel_case)
+_test_change_case_function("hello__world", "helloWorld", snake_to_camel_case)
 
 
-_test_snake_case_to_camel_case("hello", "hello")
-_test_snake_case_to_camel_case("hello_world", "helloWorld")
-_test_snake_case_to_camel_case("Hello_world", "helloWorld")
-_test_snake_case_to_camel_case("hello__world", "helloWorld")
+def pascal_to_snake_case(s: str) -> str:
+    def peek_next(index: int) -> str:
+        try:
+            return s[index + 1]
+        except IndexError:
+            return ""
+
+    snake = s[0].lower()
+    s = s[1:]
+    previous_lower = False
+    for i, c in enumerate(s):
+        if c.isupper():
+            next_lower = peek_next(i).islower()
+            if next_lower or previous_lower == True:
+                snake += "_"
+            previous_lower = False
+            snake += c.lower()
+        else:
+            previous_lower = True
+            snake += c
+    return snake
 
 
-env.filters["snake2camel"] = snake_case_to_camel_case
+_test_change_case_function("hello", "hello", pascal_to_snake_case)
+_test_change_case_function("Hello", "hello", pascal_to_snake_case)
+_test_change_case_function("helloWorld", "hello_world", pascal_to_snake_case)
+_test_change_case_function("HelloWorld", "hello_world", pascal_to_snake_case)
+_test_change_case_function("OSSimple", "os_simple", pascal_to_snake_case)
+
+env.filters["snake2camel"] = snake_to_camel_case
+env.filters["pascal2snake"] = pascal_to_snake_case
+
+for ty in ("struct", "enum", "variant"):
+    for way in ("rs_to_js", "js_to_rs"):
+        env.filters[
+            f"{ty}_{way}_function_name"
+        ] = lambda item, ty=ty, way=way: f"{ty}_{pascal_to_snake_case(item.name)}_{way}"
 
 
 def _raise_helper(msg: Any) -> None:
