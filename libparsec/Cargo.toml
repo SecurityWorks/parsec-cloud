@@ -36,3 +36,8 @@ libparsec_platform_storage = { workspace = true }
 libparsec_serialization_format = { workspace = true }
 
 libparsec_testbed = { workspace = true, optional = true }
+
+# CLI dependencies
+clap = { workspace = true, features = ["default", "derive"] }
+hex-literal = { workspace = true }
+tokio = { workspace = true, features = ["rt-multi-thread"] }
