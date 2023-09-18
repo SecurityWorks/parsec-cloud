@@ -51,6 +51,7 @@
         "@capacitor/cli": "^5.2.1",
         "@intlify/eslint-plugin-vue-i18n": "^2.0.0",
         "@ionic/cli": "^7.1.1",
+        "@playwright/test": "^1.38.0",
         "@types/luxon": "^3.2.0",
         "@types/node": "^20.3.3",
         "@types/uuid": "^9.0.2",
