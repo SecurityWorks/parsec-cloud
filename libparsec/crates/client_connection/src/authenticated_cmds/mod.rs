@@ -174,7 +174,7 @@ impl AuthenticatedCmds {
 // SSE method impls
 
 impl AuthenticatedCmds {
-    fn sse_request_builder<T>(&self) -> reqwest::RequestBuilder
+    fn sse_request_builder<T>(&self, last_event_id: Option<&str>) -> reqwest::RequestBuilder
     where
         T: ProtocolRequest<API_LATEST_MAJOR_VERSION> + Debug + 'static,
     {
@@ -196,7 +196,7 @@ impl AuthenticatedCmds {
             b"",
         );
 
-        let mut content_headers = HeaderMap::with_capacity(3);
+        let mut content_headers = HeaderMap::with_capacity(4);
         let api_version = api_version_major_to_full(T::API_MAJOR_VERSION);
         content_headers.insert(
             API_VERSION_HEADER_NAME,
@@ -206,6 +206,13 @@ impl AuthenticatedCmds {
         // No Content-Type as this request is a GET
         content_headers.insert(CONTENT_LENGTH, HeaderValue::from_static("0"));
         content_headers.insert(ACCEPT, HeaderValue::from_static(EVENT_STREAM_CONTENT_TYPE));
+        if let Some(id) = last_event_id {
+            content_headers.insert(
+                "last-event-id",
+                HeaderValue::from_str(id)
+                    .expect("Invalid char in `id` to be converted into a header value"),
+            );
+        }
         request_builder.headers(content_headers)
     }
 
@@ -216,7 +223,7 @@ impl AuthenticatedCmds {
     where
         T: ProtocolRequest<API_LATEST_MAJOR_VERSION> + Debug + 'static,
     {
-        let request_builder = self.sse_request_builder::<T>();
+        let request_builder = self.sse_request_builder::<T>(last_event_id);
 
         let response = request_builder
             .send()
