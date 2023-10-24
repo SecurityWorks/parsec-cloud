@@ -100,6 +100,7 @@ impl ProxyServer {
             .expect("The other side is waiting for this message");
 
         loop {
+            // We wait for incomming connection from the client or until we are notified.
             let (mut client_socket, client_addr) = tokio::select! {
                 res = listener.accept() => {
                     res
@@ -116,6 +117,8 @@ impl ProxyServer {
                 }
             }?;
             log::trace!("New client {}", client_addr);
+
+            // We connect to the actual backend.
             let mut server_socket = match TcpStream::connect(server_addr).await {
                 Ok(v) => {
                     log::trace!("Connected to backend");
@@ -127,29 +130,29 @@ impl ProxyServer {
                     continue;
                 }
             };
+
+            // Now we stream the data from the client/server to server/client or until we receive a
+            // message from `notify_disconnect`.
             tokio::select! {
                 copy_res = tokio::io::copy_bidirectional(&mut client_socket, &mut server_socket) => {
                     log::warn!("Client / Server finished communicating ({copy_res:?})");
                 }
                 res = self.notify_disconnect.recv() => {
+                    log::debug!("Disconnect client from proxy ...");
+                    drop(client_socket);
+                    drop(server_socket);
                     match res {
                         Some(Event::Disconnect) => {
-                            log::debug!("Disconnect client from proxy ...");
-                            drop(client_socket);
-                            drop(server_socket);
                             continue;
                         },
-                        Some(Event::Close) => {
-                            log::debug!("Closing proxy ...");
-                            drop(client_socket);
-                            drop(server_socket);
+                        Some(Event::Close) | None => {
                             break
                         },
-                        None => {},
                     }
                 }
             }
         }
+
         log::info!("Proxy stopped");
         Ok(())
     }
