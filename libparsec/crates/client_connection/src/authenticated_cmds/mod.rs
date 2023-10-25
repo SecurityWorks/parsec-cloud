@@ -174,7 +174,7 @@ impl AuthenticatedCmds {
 // SSE method impls
 
 impl AuthenticatedCmds {
-    fn sse_request_builder<T>(&self, last_event_id: Option<&str>) -> reqwest::RequestBuilder
+    fn sse_request_builder<T>(&self, last_event_id: Option<&SSEEventID>) -> reqwest::RequestBuilder
     where
         T: ProtocolRequest<API_LATEST_MAJOR_VERSION> + Debug + 'static,
     {
@@ -206,12 +206,8 @@ impl AuthenticatedCmds {
         // No Content-Type as this request is a GET
         content_headers.insert(CONTENT_LENGTH, HeaderValue::from_static("0"));
         content_headers.insert(ACCEPT, HeaderValue::from_static(EVENT_STREAM_CONTENT_TYPE));
-        if let Some(id) = last_event_id {
-            content_headers.insert(
-                "last-event-id",
-                HeaderValue::from_str(id)
-                    .expect("Invalid char in `id` to be converted into a header value"),
-            );
+        if let Some(id) = last_event_id.cloned() {
+            content_headers.insert("last-event-id", id.into());
         }
         request_builder.headers(content_headers)
     }

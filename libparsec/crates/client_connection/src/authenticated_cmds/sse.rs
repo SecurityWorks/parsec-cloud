@@ -66,7 +66,7 @@ where
     pub message: SSEResponseOrMissedEvents<T>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SSEEventID(HeaderValue);
 
 impl SSEEventID {
@@ -80,6 +80,12 @@ impl FromStr for SSEEventID {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         reqwest::header::HeaderValue::from_str(s).map(Self)
+    }
+}
+
+impl From<SSEEventID> for HeaderValue {
+    fn from(value: SSEEventID) -> Self {
+        value.0
     }
 }
 
