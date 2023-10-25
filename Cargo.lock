@@ -1409,7 +1409,6 @@ dependencies = [
  "data-encoding",
  "eventsource-stream",
  "futures",
- "futures-util",
  "libparsec_crypto",
  "libparsec_platform_async",
  "libparsec_platform_http_proxy",

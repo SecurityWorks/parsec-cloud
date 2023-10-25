@@ -52,7 +52,6 @@ libparsec_tests_lite = { workspace = true }
 libparsec_tests_fixtures = { workspace = true, features = ["test-with-client-connection-testbed"] }
 # FIXME: `rstest` is unstable when renamed. https://github.com/la10736/rstest/issues/221
 rstest = { workspace = true }
-futures-util = { workspace = true }
 rand = { workspace = true }
 anyhow = { workspace = true }
 log = { workspace = true }

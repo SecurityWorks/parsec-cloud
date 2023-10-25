@@ -3,8 +3,8 @@
 
 mod proxy;
 
-use futures_util::StreamExt;
 use libparsec_client_connection::{AuthenticatedCmds, ConnectionError, SSEResponseOrMissedEvents};
+use libparsec_platform_async::stream::StreamExt;
 use libparsec_platform_http_proxy::ProxyConfig;
 use libparsec_protocol::authenticated_cmds::latest as authenticated_cmds;
 use libparsec_testbed::TestbedEnv;
