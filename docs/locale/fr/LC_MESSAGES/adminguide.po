@@ -27,16 +27,15 @@ msgstr "Installation du client Linux Parsec"
 
 #: ../../adminguide/installation.rst:9
 msgid ""
-"Administrative operations require the installation of the Snap version of"
-" the Parsec client application. Those operations can be performed on "
-"another machine than the metadata server. You can read more about "
-"installation at the :ref:`Install Parsec Client "
-"<doc_userguide_install_client>` section."
+"Administrative operations require the installation of the Snap version of "
+"the Parsec client application. Those operations can be performed on another "
+"machine than the metadata server. You can read more about installation at "
+"the :ref:`Install Parsec Client <doc_userguide_install_client>` section."
 msgstr ""
-"Les opérations administratives nécessite l'installation de la version Snap du"
-" client Parsec. Celles-ci peuvent être exécutées sur une machine différente "
-"du serveur de métadonnées. Plus d'information sur l'installation sont "
-"disponibles dans la section :ref:`Installation du client Parsec "
+"Les opérations administratives nécessite l'installation de la version Snap "
+"du client Parsec. Celles-ci peuvent être exécutées sur une machine "
+"différente du serveur de métadonnées. Plus d'information sur l'installation "
+"sont disponibles dans la section :ref:`Installation du client Parsec "
 "<doc_userguide_install_client>`"
 
 #: ../../adminguide/stats_organization.rst:6
@@ -54,16 +53,17 @@ msgstr ""
 #: ../../adminguide/stats_organization.rst:10
 #: ../../adminguide/stats_server.rst:10
 msgid ""
-"The parsec metadata server location, through a parsec url "
-"``parsec://hostname:port``"
+"The parsec metadata server location, through a parsec url ``parsec://"
+"hostname:port``"
 msgstr ""
-"La localisation du serveur de métadonnées, par une url Parsec"
-"``parsec://hostname:port``"
+"La localisation du serveur de métadonnées, par une url Parsec``parsec://"
+"hostname:port``"
 
 #: ../../adminguide/stats_organization.rst:11
 #: ../../adminguide/stats_server.rst:11
 msgid "The ``administration_token`` configured in the parsec metadata server"
-msgstr "Le ``administration_token`` configuré dans le serveur de métadonnées Parsec"
+msgstr ""
+"Le ``administration_token`` configuré dans le serveur de métadonnées Parsec"
 
 #: ../../adminguide/stats_organization.rst:12
 msgid "The organization name"
@@ -75,8 +75,7 @@ msgstr "Extraction des statistiques serveur"
 
 #: ../../adminguide/stats_server.rst:8
 msgid ""
-"In order to extract server statistics, the administrator needs to provide"
-" :"
+"In order to extract server statistics, the administrator needs to provide :"
 msgstr ""
 "Afin d'extraire les statistiques serveur, l'administrateur doit fournir :"
 
