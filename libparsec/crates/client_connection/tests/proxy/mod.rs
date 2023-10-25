@@ -100,7 +100,7 @@ impl ProxyServer {
             .expect("The other side is waiting for this message");
 
         loop {
-            // We wait for incomming connection from the client or until we are notified.
+            // We wait for incoming connection from the client or until we are notified.
             let (mut client_socket, client_addr) = tokio::select! {
                 res = listener.accept() => {
                     res
