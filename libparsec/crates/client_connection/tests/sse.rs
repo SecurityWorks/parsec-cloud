@@ -11,7 +11,6 @@ use libparsec_testbed::TestbedEnv;
 use libparsec_tests_lite::{p_assert_eq, p_assert_matches, parsec_test};
 
 #[parsec_test(testbed = "coolorg", with_server)]
-#[timeout(std::time::Duration::from_secs(5))]
 async fn last_event_id(env: &TestbedEnv) {
     let alice = env.local_device("alice@dev1");
     let bob = env.local_device("bob@dev1");
