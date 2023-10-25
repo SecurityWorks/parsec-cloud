@@ -8,7 +8,6 @@ use std::io;
 
 use libparsec_platform_http_proxy::ProxyConfig;
 use libparsec_types::BackendAddr;
-use rand::Rng;
 use tokio::{
     net::{TcpListener, TcpStream},
     sync::{mpsc, oneshot},
@@ -47,11 +46,12 @@ enum Event {
 }
 
 pub async fn spawn(backend_addr: BackendAddr) -> io::Result<ProxyHandle> {
-    let port = rand::thread_rng().gen_range(10_000..u16::MAX);
+    let listener = TcpListener::bind(("localhost", 0)).await?;
+    let port = listener.local_addr()?.port();
     let (tx_server_ready, rx_server_ready) = oneshot::channel();
     let (tx_disconnect, rx_disconnect) = mpsc::channel(1);
     let server = ProxyServer {
-        port,
+        listener,
         backend_addr,
         notify_disconnect: rx_disconnect,
     };
@@ -79,7 +79,7 @@ pub async fn spawn(backend_addr: BackendAddr) -> io::Result<ProxyHandle> {
 }
 
 struct ProxyServer {
-    port: u16,
+    listener: TcpListener,
     backend_addr: BackendAddr,
     notify_disconnect: mpsc::Receiver<Event>,
 }
@@ -94,7 +94,6 @@ impl ProxyServer {
             )
         })?;
         log::trace!("backend url: {url}, {server_addr:?}");
-        let listener = TcpListener::bind(("localhost", self.port)).await?;
         ready
             .send(())
             .expect("The other side is waiting for this message");
@@ -102,7 +101,7 @@ impl ProxyServer {
         loop {
             // We wait for incoming connection from the client or until we are notified.
             let (mut client_socket, client_addr) = tokio::select! {
-                res = listener.accept() => {
+                res = self.listener.accept() => {
                     res
                 }
                 res = self.notify_disconnect.recv() => {
