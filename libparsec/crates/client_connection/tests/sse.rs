@@ -97,8 +97,6 @@ async fn last_event_id(env: &TestbedEnv) {
 
     assert!(sse_alice.next().await.is_none());
 
-    log::info!("Reconnect alice");
-
     let mut sse_alice = cmds_alice
         .start_sse::<authenticated_cmds::events_listen::Req>(Some(&last_alice_event_id))
         .await

@@ -27,7 +27,6 @@ impl ProxyHandle {
     }
 
     pub async fn disconnect(&self) {
-        log::trace!("Notify proxy server to close the connections ...");
         self.notify_disconnect
             .send(Event::Disconnect)
             .await
@@ -58,21 +57,16 @@ pub async fn spawn(backend_addr: BackendAddr) -> io::Result<ProxyHandle> {
     let handle = tokio::task::spawn(server.run(tx_server_ready));
 
     match rx_server_ready.await {
-        Ok(_) => {
-            log::trace!("Proxy server is ready");
-            Ok(ProxyHandle {
-                join_handle: handle,
-                port,
-                notify_disconnect: tx_disconnect,
-            })
-        }
+        Ok(_) => Ok(ProxyHandle {
+            join_handle: handle,
+            port,
+            notify_disconnect: tx_disconnect,
+        }),
         Err(_) => {
-            log::error!("Failed to start proxy server, joining the thread ...");
             let expect_err = handle
                 .await
                 .expect("Failed to join the proxy server thread")
                 .expect_err("The server should have failed");
-            log::error!("The server failed to start because: {expect_err}");
             Err(expect_err)
         }
     }
@@ -93,14 +87,13 @@ impl ProxyServer {
                 format!("Cannot extract domain and port on url `{url}`"),
             )
         })?;
-        log::trace!("backend url: {url}, {server_addr:?}");
         ready
             .send(())
             .expect("The other side is waiting for this message");
 
         loop {
             // We wait for incoming connection from the client or until we are notified.
-            let (mut client_socket, client_addr) = tokio::select! {
+            let (mut client_socket, _client_addr) = tokio::select! {
                 res = self.listener.accept() => {
                     res
                 }
@@ -115,16 +108,12 @@ impl ProxyServer {
                     }
                 }
             }?;
-            log::trace!("New client {}", client_addr);
 
             // We connect to the actual backend.
             let mut server_socket = match TcpStream::connect(server_addr).await {
-                Ok(v) => {
-                    log::trace!("Connected to backend");
-                    v
-                }
+                Ok(v) => v,
                 Err(e) => {
-                    log::error!("Failed to connect to the backend: {e}");
+                    eprintln!("Failed to connect to the backend: {e}");
                     drop(client_socket);
                     continue;
                 }
@@ -133,11 +122,9 @@ impl ProxyServer {
             // Now we stream the data from the client/server to server/client or until we receive a
             // message from `notify_disconnect`.
             tokio::select! {
-                copy_res = tokio::io::copy_bidirectional(&mut client_socket, &mut server_socket) => {
-                    log::warn!("Client / Server finished communicating ({copy_res:?})");
+                _copy_res = tokio::io::copy_bidirectional(&mut client_socket, &mut server_socket) => {
                 }
                 res = self.notify_disconnect.recv() => {
-                    log::debug!("Disconnect client from proxy ...");
                     drop(client_socket);
                     drop(server_socket);
                     match res {
@@ -151,8 +138,6 @@ impl ProxyServer {
                 }
             }
         }
-
-        log::info!("Proxy stopped");
         Ok(())
     }
 }
