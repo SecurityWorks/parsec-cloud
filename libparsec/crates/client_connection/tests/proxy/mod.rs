@@ -6,7 +6,6 @@
 
 use std::io;
 
-use libparsec_platform_http_proxy::ProxyConfig;
 use libparsec_types::BackendAddr;
 use tokio::{
     net::{TcpListener, TcpStream},
@@ -20,10 +19,8 @@ pub struct ProxyHandle {
 }
 
 impl ProxyHandle {
-    pub fn get_proxy(&self) -> anyhow::Result<ProxyConfig> {
-        ProxyConfig::default()
-            .with_http_proxy(format!("http://localhost:{}", self.port))?
-            .with_https_proxy(format!("http://localhost:{}", self.port))
+    pub fn to_backend_addr(&self) -> BackendAddr {
+        BackendAddr::new("localhost".into(), Some(self.port), false)
     }
 
     pub async fn disconnect(&self) {

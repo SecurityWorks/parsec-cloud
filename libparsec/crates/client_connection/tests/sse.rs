@@ -3,24 +3,33 @@
 
 mod proxy;
 
+use std::sync::Arc;
+
 use libparsec_client_connection::{AuthenticatedCmds, ConnectionError, SSEResponseOrMissedEvents};
 use libparsec_platform_async::stream::StreamExt;
 use libparsec_platform_http_proxy::ProxyConfig;
 use libparsec_protocol::authenticated_cmds::latest as authenticated_cmds;
 use libparsec_testbed::TestbedEnv;
 use libparsec_tests_lite::{p_assert_eq, p_assert_matches, parsec_test};
+use libparsec_types::BackendOrganizationAddr;
 
 #[parsec_test(testbed = "coolorg", with_server)]
 async fn last_event_id(env: &TestbedEnv) {
-    let alice = env.local_device("alice@dev1");
+    let mut alice = env.local_device("alice@dev1");
     let bob = env.local_device("bob@dev1");
     let mallory = env.local_device("mallory@dev1");
 
     let alice_proxy = proxy::spawn(env.server_addr.clone()).await.unwrap();
 
-    let alice_proxy_cfg = alice_proxy.get_proxy().unwrap();
+    Arc::make_mut(&mut alice).organization_addr = BackendOrganizationAddr::new(
+        alice_proxy.to_backend_addr(),
+        alice.organization_id().clone(),
+        alice.root_verify_key().clone(),
+    );
+
     let cmds_alice =
-        AuthenticatedCmds::new(&env.discriminant_dir, alice.clone(), alice_proxy_cfg).unwrap();
+        AuthenticatedCmds::new(&env.discriminant_dir, alice.clone(), ProxyConfig::default())
+            .unwrap();
     let cmds_bob =
         AuthenticatedCmds::new(&env.discriminant_dir, bob.clone(), ProxyConfig::default()).unwrap();
     let cmds_mallory = AuthenticatedCmds::new(
