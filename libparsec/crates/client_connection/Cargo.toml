@@ -23,6 +23,7 @@ libparsec_protocol = { workspace = true }
 libparsec_testbed = { workspace = true, optional = true }
 libparsec_platform_http_proxy = { workspace = true }
 libparsec_platform_async = { workspace = true }
+libparsec_constant = { workspace = true }
 
 eventsource-stream = { workspace = true, features = ["std"] }
 # Used to send HTTP request to the server.
