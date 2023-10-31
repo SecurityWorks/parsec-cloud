@@ -2,6 +2,7 @@
 
 mod anonymous_cmds;
 mod authenticated_cmds;
+mod constant;
 mod error;
 mod invited_cmds;
 #[cfg(feature = "test-with-testbed")]
