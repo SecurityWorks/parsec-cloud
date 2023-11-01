@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Tuple, Union
+from typing import Any, Union
 
 from parsec._parsec import (
     BlockID,
@@ -15,7 +15,6 @@ from parsec._parsec import (
     VerifyKey,
     VlobID,
 )
-from parsec.types import FrozenDict
 
 ChildManifest = Union[
     FolderManifest,
@@ -23,7 +22,9 @@ ChildManifest = Union[
 ]
 
 class EntryName:
-    def __init__(self, name: str) -> None: ...
+    def __init__(self, name: str) -> None:
+        """Raise `ValueError` if `name` is invalid"""
+        ...
     def __str__(self) -> str: ...
     def __lt__(self, other: EntryName | None) -> bool: ...
     def __gt__(self, other: EntryName | None) -> bool: ...
@@ -87,7 +88,7 @@ class FolderManifest:
         version: int,
         created: DateTime,
         updated: DateTime,
-        children: FrozenDict[EntryName, VlobID],
+        children: dict[EntryName, VlobID],
     ) -> None: ...
     @property
     def author(self) -> DeviceID: ...
@@ -104,7 +105,7 @@ class FolderManifest:
     @property
     def updated(self) -> DateTime: ...
     @property
-    def children(self) -> FrozenDict[EntryName, VlobID]: ...
+    def children(self) -> dict[EntryName, VlobID]: ...
     def evolve(self, **kwargs: Any) -> FolderManifest: ...
     def dump_and_sign(self, author_signkey: SigningKey) -> bytes: ...
     def dump_sign_and_encrypt(self, author_signkey: SigningKey, key: SecretKey) -> bytes: ...
@@ -118,7 +119,9 @@ class FolderManifest:
         expected_timestamp: DateTime,
         expected_id: VlobID | None = None,
         expected_version: int | None = None,
-    ) -> FolderManifest: ...
+    ) -> FolderManifest:
+        """Raise `ValueError` if invalid"""
+        ...
 
 class FileManifest:
     def __init__(
@@ -132,7 +135,7 @@ class FileManifest:
         updated: DateTime,
         size: int,
         blocksize: int,
-        blocks: Tuple[BlockAccess],
+        blocks: tuple[BlockAccess],
     ) -> None: ...
     @property
     def author(self) -> DeviceID: ...
@@ -153,7 +156,7 @@ class FileManifest:
     @property
     def blocksize(self) -> int: ...
     @property
-    def blocks(self) -> Tuple[BlockAccess]: ...
+    def blocks(self) -> tuple[BlockAccess]: ...
     def evolve(self, **kwargs: Any) -> FileManifest: ...
     def dump_and_sign(self, author_signkey: SigningKey) -> bytes: ...
     def dump_sign_and_encrypt(self, author_signkey: SigningKey, key: SecretKey) -> bytes: ...
@@ -167,7 +170,9 @@ class FileManifest:
         expected_timestamp: DateTime,
         expected_id: VlobID | None = None,
         expected_version: int | None = None,
-    ) -> FileManifest: ...
+    ) -> FileManifest:
+        """Raise `ValueError` if invalid"""
+        ...
 
 class WorkspaceManifest:
     def __init__(
@@ -178,7 +183,7 @@ class WorkspaceManifest:
         version: int,
         created: DateTime,
         updated: DateTime,
-        children: FrozenDict[EntryName, VlobID],
+        children: dict[EntryName, VlobID],
     ) -> None: ...
     @property
     def author(self) -> DeviceID: ...
@@ -193,7 +198,7 @@ class WorkspaceManifest:
     @property
     def updated(self) -> DateTime: ...
     @property
-    def children(self) -> FrozenDict[EntryName, VlobID]: ...
+    def children(self) -> dict[EntryName, VlobID]: ...
     def evolve(self, **kwargs: Any) -> WorkspaceManifest: ...
     def dump_and_sign(self, author_signkey: SigningKey) -> bytes: ...
     def dump_sign_and_encrypt(self, author_signkey: SigningKey, key: SecretKey) -> bytes: ...
@@ -207,7 +212,9 @@ class WorkspaceManifest:
         expected_timestamp: DateTime,
         expected_id: VlobID | None = None,
         expected_version: int | None = None,
-    ) -> WorkspaceManifest: ...
+    ) -> WorkspaceManifest:
+        """Raise `ValueError` if invalid"""
+        ...
     @classmethod
     def verify_and_load(
         cls,
@@ -217,7 +224,9 @@ class WorkspaceManifest:
         expected_timestamp: DateTime,
         expected_id: VlobID | None = None,
         expected_version: int | None = None,
-    ) -> WorkspaceManifest: ...
+    ) -> WorkspaceManifest:
+        """Raise `ValueError` if invalid"""
+        ...
 
 class UserManifest:
     def __init__(
@@ -229,7 +238,7 @@ class UserManifest:
         created: DateTime,
         updated: DateTime,
         last_processed_message: int,
-        workspaces: Tuple[WorkspaceEntry],
+        workspaces: tuple[WorkspaceEntry],
     ) -> None: ...
     @property
     def author(self) -> DeviceID: ...
@@ -246,7 +255,7 @@ class UserManifest:
     @property
     def last_processed_message(self) -> int: ...
     @property
-    def workspaces(self) -> Tuple[WorkspaceEntry]: ...
+    def workspaces(self) -> tuple[WorkspaceEntry]: ...
     def evolve(self, **kwargs: Any) -> UserManifest: ...
     def dump_and_sign(self, author_signkey: SigningKey) -> bytes: ...
     def dump_sign_and_encrypt(self, author_signkey: SigningKey, key: SecretKey) -> bytes: ...
@@ -260,7 +269,9 @@ class UserManifest:
         expected_timestamp: DateTime,
         expected_id: VlobID | None = None,
         expected_version: int | None = None,
-    ) -> UserManifest: ...
+    ) -> UserManifest:
+        """Raise `ValueError` if invalid"""
+        ...
     def get_workspace_entry(self, workspace_id: VlobID) -> WorkspaceEntry | None: ...
 
 def child_manifest_decrypt_verify_and_load(
@@ -271,7 +282,10 @@ def child_manifest_decrypt_verify_and_load(
     expected_timestamp: DateTime,
     expected_id: VlobID | None = None,
     expected_version: int | None = None,
-) -> ChildManifest: ...
+) -> ChildManifest:
+    """Raise `ValueError` if invalid"""
+    ...
+
 def child_manifest_verify_and_load(
     signed: bytes,
     author_verify_key: VerifyKey,
@@ -279,4 +293,6 @@ def child_manifest_verify_and_load(
     expected_timestamp: DateTime,
     expected_id: VlobID | None = None,
     expected_version: int | None = None,
-) -> ChildManifest: ...
+) -> ChildManifest:
+    """Raise `ValueError` if invalid"""
+    ...

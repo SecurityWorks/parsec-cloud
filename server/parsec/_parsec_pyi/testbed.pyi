@@ -28,7 +28,6 @@ from parsec._parsec import (
     UserProfile,
     UserUpdateCertificate,
     VlobID,
-    InvitationToken,
 )
 
 def test_get_testbed_template(id: str) -> TestbedTemplateContent | None: ...
@@ -166,7 +165,6 @@ class TestbedEventShareRealm:
     realm: VlobID
     user: UserID
     role: RealmRole | None
-    recipient_message: bytes | None
 
     certificate: RealmRoleCertificate
     raw_redacted_certificate: bytes
@@ -176,20 +174,16 @@ class TestbedEventStartRealmReencryption:
     timestamp: DateTime
     author: DeviceID
     realm: VlobID
-    encryption_revision: int
-    per_participant_message: list[tuple[UserID, bytes]]
 
 class TestbedEventFinishRealmReencryption:
     timestamp: DateTime
     author: DeviceID
     realm: VlobID
-    encryption_revision: int
 
 class TestbedEventCreateOrUpdateOpaqueVlob:
     timestamp: DateTime
     author: DeviceID
     realm: VlobID
-    encryption_revision: int
     vlob_id: VlobID
     version: int
     encrypted: bytes

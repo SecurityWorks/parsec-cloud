@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from parsec._parsec_pyi import (
-    DataError,
-    EntryNameError,
     testbed,  # Only define when build with `test-utils` feature
 )
 from parsec._parsec_pyi.addrs import (
@@ -16,21 +14,6 @@ from parsec._parsec_pyi.addrs import (
     BackendOrganizationFileLinkAddr,
     BackendPkiEnrollmentAddr,
     export_root_verify_key,
-)
-from parsec._parsec_pyi.backend_events import (
-    BackendEvent,
-    BackendEventCertificatesUpdated,
-    BackendEventInviteConduitUpdated,
-    BackendEventInviteStatusChanged,
-    BackendEventMessageReceived,
-    BackendEventOrganizationExpired,
-    BackendEventPinged,
-    BackendEventPkiEnrollmentUpdated,
-    BackendEventRealmMaintenanceFinished,
-    BackendEventRealmMaintenanceStarted,
-    BackendEventRealmRolesUpdated,
-    BackendEventRealmVlobsUpdated,
-    BackendEventUserUpdatedOrRevoked,
 )
 from parsec._parsec_pyi.certif import (
     DeviceCertificate,
@@ -63,6 +46,7 @@ from parsec._parsec_pyi.enumerate import (
 )
 from parsec._parsec_pyi.ids import (
     BlockID,
+    BootstrapToken,
     ChunkID,
     DeviceID,
     DeviceLabel,
@@ -87,39 +71,18 @@ from parsec._parsec_pyi.manifest import (
     child_manifest_decrypt_verify_and_load,
     child_manifest_verify_and_load,
 )
-from parsec._parsec_pyi.message import (
-    MessageContent,
-    PingMessageContent,
-    SharingGrantedMessageContent,
-    SharingReencryptedMessageContent,
-    SharingRevokedMessageContent,
-)
 from parsec._parsec_pyi.misc import ApiVersion
-from parsec._parsec_pyi.organization import OrganizationConfig, OrganizationStats
-from parsec._parsec_pyi.pki import (
-    LocalPendingEnrollment,
-    PkiEnrollmentAnswerPayload,
-    PkiEnrollmentSubmitPayload,
-    X509Certificate,
-)
 from parsec._parsec_pyi.protocol import (
     ActiveUsersLimit,
-    ProtocolError,
-    ProtocolErrorFields,
-    ReencryptionBatchEntry,
     anonymous_cmds,
     authenticated_cmds,
     invited_cmds,
 )
-from parsec._parsec_pyi.regex import Regex
-from parsec._parsec_pyi.time import DateTime, LocalDateTime, TimeProvider, mock_time
-from parsec._parsec_pyi.user import UsersPerProfileDetailItem
+from parsec._parsec_pyi.time import DateTime
 
 __all__ = [
     "ApiVersion",
     # Data Error
-    "DataError",
-    "EntryNameError",
     # Certif
     "UserCertificate",
     "DeviceCertificate",
@@ -161,6 +124,7 @@ __all__ = [
     "VlobID",
     "SequesterServiceID",
     "EnrollmentID",
+    "BootstrapToken",
     "InvitationToken",
     # Addrs
     "BackendAddr",
@@ -171,20 +135,6 @@ __all__ = [
     "BackendOrganizationFileLinkAddr",
     "BackendPkiEnrollmentAddr",
     "export_root_verify_key",
-    # Backend internal events
-    "BackendEvent",
-    "BackendEventCertificatesUpdated",
-    "BackendEventInviteConduitUpdated",
-    "BackendEventUserUpdatedOrRevoked",
-    "BackendEventOrganizationExpired",
-    "BackendEventPinged",
-    "BackendEventMessageReceived",
-    "BackendEventInviteStatusChanged",
-    "BackendEventRealmMaintenanceFinished",
-    "BackendEventRealmMaintenanceStarted",
-    "BackendEventRealmVlobsUpdated",
-    "BackendEventRealmRolesUpdated",
-    "BackendEventPkiEnrollmentUpdated",
     # Manifest
     "EntryName",
     "WorkspaceEntry",
@@ -196,37 +146,13 @@ __all__ = [
     "ChildManifest",
     "child_manifest_decrypt_verify_and_load",
     "child_manifest_verify_and_load",
-    # Message
-    "MessageContent",
-    "SharingGrantedMessageContent",
-    "SharingReencryptedMessageContent",
-    "SharingRevokedMessageContent",
-    "PingMessageContent",
-    # Organization
-    "OrganizationConfig",
-    "OrganizationStats",
-    # Pki
-    "PkiEnrollmentAnswerPayload",
-    "PkiEnrollmentSubmitPayload",
-    "X509Certificate",
-    "LocalPendingEnrollment",
-    # User
-    "UsersPerProfileDetailItem",
     # Time
     "DateTime",
-    "LocalDateTime",
-    "TimeProvider",
-    "mock_time",
     # Protocol Cmd
     "authenticated_cmds",
     "anonymous_cmds",
     "invited_cmds",
-    "ProtocolError",
-    "ProtocolErrorFields",
-    "ReencryptionBatchEntry",
     "ActiveUsersLimit",
-    # Regex
-    "Regex",
     # Testbed
     "testbed",
 ]

@@ -9,8 +9,7 @@ use pyo3::{
 use std::{collections::HashMap, num::NonZeroU64};
 
 use crate::{
-    BlockID, DataResult, DateTime, DeviceID, EntryNameResult, HashDigest, RealmRole, SecretKey,
-    SigningKey, VerifyKey, VlobID,
+    BlockID, DateTime, DeviceID, HashDigest, RealmRole, SecretKey, SigningKey, VerifyKey, VlobID,
 };
 use libparsec_types::{ChildManifest, IndexInt};
 
@@ -25,8 +24,10 @@ crate::binding_utils::gen_py_wrapper_class_for_id!(
 #[pymethods]
 impl EntryName {
     #[new]
-    fn new(name: &str) -> EntryNameResult<Self> {
-        Ok(libparsec_types::EntryName::try_from(name).map(Self)?)
+    fn new(name: &str) -> PyResult<Self> {
+        libparsec_types::EntryName::try_from(name)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map(Self)
     }
 
     fn __repr__(&self) -> PyResult<String> {
@@ -327,8 +328,8 @@ impl FileManifest {
         expected_timestamp: DateTime,
         expected_id: Option<VlobID>,
         expected_version: Option<u32>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::FileManifest::decrypt_verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::FileManifest::decrypt_verify_and_load(
             encrypted,
             &key.0,
             &author_verify_key.0,
@@ -337,7 +338,8 @@ impl FileManifest {
             expected_id.map(|id| id.0),
             expected_version,
         )
-        .map(Self)?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(Self)
     }
 
     #[pyo3(signature = (**py_kwargs))]
@@ -520,8 +522,8 @@ impl FolderManifest {
         expected_timestamp: DateTime,
         expected_id: Option<VlobID>,
         expected_version: Option<u32>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::FolderManifest::decrypt_verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::FolderManifest::decrypt_verify_and_load(
             encrypted,
             &key.0,
             &author_verify_key.0,
@@ -530,7 +532,8 @@ impl FolderManifest {
             expected_id.map(|id| id.0),
             expected_version,
         )
-        .map(Self)?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(Self)
     }
 
     #[pyo3(signature = (**py_kwargs))]
@@ -692,8 +695,8 @@ impl WorkspaceManifest {
         expected_timestamp: DateTime,
         expected_id: Option<VlobID>,
         expected_version: Option<u32>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::WorkspaceManifest::decrypt_verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::WorkspaceManifest::decrypt_verify_and_load(
             encrypted,
             &key.0,
             &author_verify_key.0,
@@ -702,7 +705,8 @@ impl WorkspaceManifest {
             expected_id.map(|id| id.0),
             expected_version,
         )
-        .map(Self)?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(Self)
     }
 
     #[classmethod]
@@ -715,8 +719,8 @@ impl WorkspaceManifest {
         expected_timestamp: DateTime,
         expected_id: Option<VlobID>,
         expected_version: Option<u32>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::WorkspaceManifest::verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::WorkspaceManifest::verify_and_load(
             signed,
             &author_verify_key.0,
             &expected_author.0,
@@ -724,7 +728,8 @@ impl WorkspaceManifest {
             expected_id.map(|id| id.0),
             expected_version,
         )
-        .map(Self)?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(Self)
     }
 
     #[pyo3(signature = (**py_kwargs))]
@@ -877,8 +882,8 @@ impl UserManifest {
         expected_timestamp: DateTime,
         expected_id: Option<VlobID>,
         expected_version: Option<u32>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::UserManifest::decrypt_verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::UserManifest::decrypt_verify_and_load(
             encrypted,
             &key.0,
             &author_verify_key.0,
@@ -887,7 +892,8 @@ impl UserManifest {
             expected_id.map(|id| id.0),
             expected_version,
         )
-        .map(Self)?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(Self)
     }
 
     #[pyo3(signature = (**py_kwargs))]
@@ -1001,8 +1007,8 @@ pub(crate) fn child_manifest_decrypt_verify_and_load(
     expected_timestamp: DateTime,
     expected_id: Option<VlobID>,
     expected_version: Option<u32>,
-) -> DataResult<PyObject> {
-    Ok(ChildManifest::decrypt_verify_and_load(
+) -> PyResult<PyObject> {
+    ChildManifest::decrypt_verify_and_load(
         encrypted,
         &key.0,
         &author_verify_key.0,
@@ -1011,7 +1017,8 @@ pub(crate) fn child_manifest_decrypt_verify_and_load(
         expected_id.map(|id| id.0),
         expected_version,
     )
-    .map(|blob| unwrap_child_manifest(py, blob))?)
+    .map_err(|e| PyValueError::new_err(e.to_string()))
+    .map(|blob| unwrap_child_manifest(py, blob))
 }
 
 #[pyfunction]
@@ -1023,8 +1030,8 @@ pub(crate) fn child_manifest_verify_and_load(
     expected_timestamp: DateTime,
     expected_id: Option<VlobID>,
     expected_version: Option<u32>,
-) -> DataResult<PyObject> {
-    Ok(ChildManifest::verify_and_load(
+) -> PyResult<PyObject> {
+    ChildManifest::verify_and_load(
         signed,
         &author_verify_key.0,
         &expected_author.0,
@@ -1032,7 +1039,8 @@ pub(crate) fn child_manifest_verify_and_load(
         expected_id.map(|id| id.0),
         expected_version,
     )
-    .map(|blob| unwrap_child_manifest(py, blob))?)
+    .map_err(|e| PyValueError::new_err(e.to_string()))
+    .map(|blob| unwrap_child_manifest(py, blob))
 }
 
 fn unwrap_child_manifest(py: Python, manifest: ChildManifest) -> PyObject {

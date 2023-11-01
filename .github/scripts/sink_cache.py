@@ -1,4 +1,5 @@
 # Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 2016-present Scille SAS
+from __future__ import annotations
 
 # CLI to Delete Github Action Cache.
 #
@@ -11,7 +12,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import datetime
 from logging import basicConfig, getLogger
-from typing import Any, Dict, Optional
+from typing import Any
 
 basicConfig(level=logging.INFO)
 logger = getLogger()
@@ -33,7 +34,7 @@ def naturalize(bytes_size: int) -> str:
         return f"{normalized_size:.1f} GiB"
 
 
-def gh_api(url: str, method: Optional[str] = "GET"):
+def gh_api(url: str, method: str | None = "GET") -> dict:
     extra_args = ["--header='Accept: application/json'"]
     if method is not None:
         extra_args.append(f"--method={method}")
@@ -53,7 +54,8 @@ class CacheEntry:
     created_at: datetime
     size_in_bytes: int
 
-    def from_dict(dict: Dict[str, Any]) -> "CacheEntries":
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> CacheEntry:
         # Datetime format for `2019-01-24T22:45:36.000Z``
 
         def get_iso_datetime(raw: str) -> datetime:
@@ -76,24 +78,24 @@ class CacheEntry:
             dt = datetime.fromisoformat(raw_without_nano)
             return dt
 
-        last_accessed_at = get_iso_datetime(dict["last_accessed_at"])
-        create_at = get_iso_datetime(dict["created_at"])
+        last_accessed_at = get_iso_datetime(data["last_accessed_at"])
+        create_at = get_iso_datetime(data["created_at"])
 
-        return CacheEntry(
-            id=int(dict["id"]),
-            key=dict["key"],
-            ref=dict["ref"],
-            version=dict["version"],
+        return cls(
+            id=int(data["id"]),
+            key=data["key"],
+            ref=data["ref"],
+            version=data["version"],
             last_accessed_at=last_accessed_at,
             created_at=create_at,
-            size_in_bytes=int(dict["size_in_bytes"]),
+            size_in_bytes=int(data["size_in_bytes"]),
         )
 
 
 @dataclass
 class CacheEntries:
     total_count: int
-    actions_caches: Dict[int, CacheEntry]
+    actions_caches: dict[int, CacheEntry]
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.total_count}, {self.actions_caches:r})"
@@ -105,11 +107,12 @@ class CacheEntries:
     def need_to_download_more(self) -> bool:
         return self.total_count - 1 != len(self.actions_caches)
 
-    def from_dict(raw_dict: Dict[str, Any]) -> "CacheEntries":
-        return CacheEntries(0, {}).update_from_dict(raw_dict, unique_cache=True)
+    @classmethod
+    def from_dict(cls, raw_dict: dict[str, Any]) -> CacheEntries:
+        return cls(0, {}).update_from_dict(raw_dict, unique_cache=True)
 
     def update_from_dict(
-        self, raw_dict: Dict[str, Any], unique_cache: bool = False
+        self, raw_dict: dict[str, Any], unique_cache: bool = False
     ) -> "CacheEntries":
         self.total_count = int(raw_dict["total_count"])
 
@@ -129,7 +132,7 @@ class CacheEntries:
         return new_entries
 
 
-def get_cache_entries(owner: str, repo: str, ref: Optional[str]) -> CacheEntries:
+def get_cache_entries(owner: str, repo: str, ref: str | None) -> CacheEntries:
     """
     Documentation: https://docs.github.com/en/rest/actions/cache#list-github-actions-caches-for-a-repository
     """
@@ -153,9 +156,7 @@ def get_cache_entries(owner: str, repo: str, ref: Optional[str]) -> CacheEntries
     return cache_entries
 
 
-def remove_cache_entries(
-    entries: CacheEntries, owner: str, repo: str, dry: bool, ref: Optional[str]
-):
+def remove_cache_entries(entries: CacheEntries, owner: str, repo: str, dry: bool, ref: str | None):
     log = logger.getChild(remove_cache_entries.__name__)
     base_url = f"/repos/{owner}/{repo}/actions/caches?"
     if ref is not None:
@@ -175,7 +176,7 @@ def remove_cache_entries(
                 log.debug(f"res={return_val}")
 
 
-def remove_caches_from_repository(owner: str, repo: str, dry: bool, ref: Optional[str]):
+def remove_caches_from_repository(owner: str, repo: str, dry: bool, ref: str | None):
     logger.info(f"Will remove caches from {owner}/{repo}" + (f"/{ref}" if ref is not None else ""))
     entries = get_cache_entries(owner, repo, ref)
     if entries.actions_caches:

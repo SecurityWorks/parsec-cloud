@@ -7,11 +7,14 @@ use pyo3::{
 use std::sync::Arc;
 
 use crate::{
-    BlockID, DateTime, DeviceCertificate, DeviceID, DeviceLabel, HumanHandle, InvitationToken,
-    PrivateKey, RealmRole, RealmRoleCertificate, RevokedUserCertificate, SecretKey,
-    SequesterAuthorityCertificate, SequesterPrivateKeyDer, SequesterPublicKeyDer,
-    SequesterServiceCertificate, SequesterServiceID, SequesterSigningKeyDer, SequesterVerifyKeyDer,
-    SigningKey, UserCertificate, UserID, UserProfile, UserUpdateCertificate, VlobID,
+    data::{
+        DeviceCertificate, RealmRoleCertificate, RevokedUserCertificate,
+        SequesterAuthorityCertificate, SequesterServiceCertificate, UserCertificate,
+        UserUpdateCertificate,
+    },
+    BlockID, DateTime, DeviceID, DeviceLabel, HumanHandle, InvitationToken, PrivateKey, RealmRole,
+    SecretKey, SequesterPrivateKeyDer, SequesterPublicKeyDer, SequesterServiceID,
+    SequesterSigningKeyDer, SequesterVerifyKeyDer, SigningKey, UserID, UserProfile, VlobID,
 };
 
 #[pyclass]
@@ -273,7 +276,6 @@ event_wrapper!(
         realm: VlobID,
         user: UserID,
         role: Option<&'static PyObject>,
-        recipient_message: Py<PyBytes>,
         certificate: RealmRoleCertificate,
         raw_redacted_certificate: Py<PyBytes>,
         raw_certificate: Py<PyBytes>,
@@ -294,45 +296,11 @@ event_wrapper!(
 );
 
 event_wrapper!(
-    TestbedEventStartRealmReencryption,
-    [
-        timestamp: DateTime,
-        author: DeviceID,
-        realm: VlobID,
-        encryption_revision: libparsec_types::IndexInt,
-        per_participant_message: Py<PyList>,
-    ],
-    |_py, x: &TestbedEventStartRealmReencryption| -> PyResult<String> {
-        Ok(format!(
-            "timestamp={:?}, author={:?}, realm={:?}, encryption_revision={}",
-            x.timestamp.0, x.author.0, x.realm.0, x.encryption_revision,
-        ))
-    }
-);
-
-event_wrapper!(
-    TestbedEventFinishRealmReencryption,
-    [
-        timestamp: DateTime,
-        author: DeviceID,
-        realm: VlobID,
-        encryption_revision: libparsec_types::IndexInt,
-    ],
-    |_py, x: &TestbedEventFinishRealmReencryption| -> PyResult<String> {
-        Ok(format!(
-            "timestamp={:?}, author={:?}, realm={:?}, encryption_revision={:?}",
-            x.timestamp.0, x.author.0, x.realm.0, x.encryption_revision,
-        ))
-    }
-);
-
-event_wrapper!(
     TestbedEventCreateOrUpdateOpaqueVlob,
     [
         timestamp: DateTime,
         author: DeviceID,
         realm: VlobID,
-        encryption_revision: libparsec_types::IndexInt,
         vlob_id: VlobID,
         version: libparsec_types::VersionInt,
         encrypted: Py<PyBytes>,
@@ -662,52 +630,15 @@ fn event_to_pyobject(
         libparsec_testbed::TestbedEvent::ShareRealm(x) => {
             let (certificate, raw_certificate, raw_redacted_certificate) =
                 single_certificate!(py, x, template, RealmRole);
-            let recipient_message = x.recipient_message(template);
             let obj = TestbedEventShareRealm {
                 timestamp: x.timestamp.into(),
                 author: x.author.clone().into(),
                 realm: x.realm.into(),
                 user: x.user.clone().into(),
                 role: x.role.map(RealmRole::convert),
-                recipient_message: PyBytes::new(py, &recipient_message.signed).into_py(py),
                 raw_certificate,
                 raw_redacted_certificate,
                 certificate,
-            };
-            Some(obj.into_py(py))
-        }
-
-        libparsec_testbed::TestbedEvent::StartRealmReencryption(x) => {
-            let per_participant_message = x.per_participant_message(template);
-            let obj = TestbedEventStartRealmReencryption {
-                timestamp: x.timestamp.into(),
-                author: x.author.clone().into(),
-                realm: x.realm.into(),
-                encryption_revision: x.encryption_revision,
-                per_participant_message: PyList::new(
-                    py,
-                    per_participant_message
-                        .items
-                        .iter()
-                        .map(|(user_id, _, raw)| {
-                            (
-                                UserID::from(user_id.to_owned()).into_py(py),
-                                PyBytes::new(py, raw),
-                            )
-                        })
-                        .collect::<Vec<_>>(),
-                )
-                .into_py(py),
-            };
-            Some(obj.into_py(py))
-        }
-
-        libparsec_testbed::TestbedEvent::FinishRealmReencryption(x) => {
-            let obj = TestbedEventFinishRealmReencryption {
-                timestamp: x.timestamp.into(),
-                author: x.author.clone().into(),
-                realm: x.realm.into(),
-                encryption_revision: x.encryption_revision,
             };
             Some(obj.into_py(py))
         }
@@ -730,7 +661,6 @@ fn event_to_pyobject(
                 timestamp: x.timestamp.into(),
                 author: x.author.clone().into(),
                 realm: x.realm.into(),
-                encryption_revision: x.encryption_revision,
                 version: x.version,
                 vlob_id: x.vlob_id.into(),
                 encrypted: PyBytes::new(py, &x.encrypted).into(),
@@ -757,7 +687,6 @@ fn event_to_pyobject(
                 timestamp: x.manifest.timestamp.into(),
                 author: x.manifest.author.clone().into(),
                 realm: x.manifest.id.into(),
-                encryption_revision: 1,
                 version: x.manifest.version,
                 vlob_id: x.manifest.id.into(),
                 encrypted: PyBytes::new(py, &x.encrypted(template)).into(),
@@ -784,7 +713,6 @@ fn event_to_pyobject(
                 timestamp: x.manifest.timestamp.into(),
                 author: x.manifest.author.clone().into(),
                 realm: x.manifest.id.into(),
-                encryption_revision: 1,
                 version: x.manifest.version,
                 vlob_id: x.manifest.id.into(),
                 encrypted: PyBytes::new(py, &x.encrypted(template)).into(),
@@ -811,7 +739,6 @@ fn event_to_pyobject(
                 timestamp: x.manifest.timestamp.into(),
                 author: x.manifest.author.clone().into(),
                 realm: x.realm.into(),
-                encryption_revision: 1,
                 version: x.manifest.version,
                 vlob_id: x.manifest.id.into(),
                 encrypted: PyBytes::new(py, &x.encrypted(template)).into(),
@@ -838,7 +765,6 @@ fn event_to_pyobject(
                 timestamp: x.manifest.timestamp.into(),
                 author: x.manifest.author.clone().into(),
                 realm: x.realm.into(),
-                encryption_revision: 1,
                 version: x.manifest.version,
                 vlob_id: x.manifest.id.into(),
                 encrypted: PyBytes::new(py, &x.encrypted(template)).into(),

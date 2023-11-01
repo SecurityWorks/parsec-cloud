@@ -3,6 +3,7 @@
 use std::sync::Arc;
 
 use pyo3::{
+    exceptions::PyValueError,
     prelude::*,
     types::{PyBytes, PyDict, PyType},
 };
@@ -10,8 +11,7 @@ use pyo3::{
 use libparsec_types::{CertificateSignerOwned, CertificateSignerRef, UnsecureSkipValidationReason};
 
 use crate::{
-    api_crypto::{PublicKey, SequesterPublicKeyDer, SequesterVerifyKeyDer, SigningKey, VerifyKey},
-    data::DataResult,
+    crypto::{PublicKey, SequesterPublicKeyDer, SequesterVerifyKeyDer, SigningKey, VerifyKey},
     enumerate::{RealmRole, UserProfile},
     ids::{DeviceID, DeviceLabel, HumanHandle, SequesterServiceID, UserID, VlobID},
     time::DateTime,
@@ -110,8 +110,8 @@ impl UserCertificate {
         expected_author: Option<&DeviceID>,
         expected_user: Option<&UserID>,
         expected_human_handle: Option<&HumanHandle>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::UserCertificate::verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::UserCertificate::verify_and_load(
             signed,
             &author_verify_key.0,
             match expected_author {
@@ -121,7 +121,8 @@ impl UserCertificate {
             expected_user.map(|x| &x.0),
             expected_human_handle.map(|x| &x.0),
         )
-        .map(|x| Self(Arc::new(x)))?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(|x| Self(Arc::new(x)))
     }
 
     fn dump_and_sign<'py>(&self, author_signkey: &SigningKey, py: Python<'py>) -> &'py PyBytes {
@@ -129,12 +130,37 @@ impl UserCertificate {
     }
 
     #[classmethod]
-    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> DataResult<Self> {
-        Ok(
-            libparsec_types::UserCertificate::unsecure_load(signed.to_vec().into())
-                .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
-                .map(|x| Self(Arc::new(x)))?,
-        )
+    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> PyResult<Self> {
+        libparsec_types::UserCertificate::unsecure_load(signed.to_vec().into())
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
+            .map(|x| Self(Arc::new(x)))
+    }
+
+    fn redacted_compare(&self, redacted: UserCertificate) -> bool {
+        let libparsec_types::UserCertificate {
+            author,
+            timestamp,
+            user_id,
+            public_key,
+            profile,
+            human_handle: _,
+        } = &*self.0;
+
+        let libparsec_types::UserCertificate {
+            author: redacted_author,
+            timestamp: redacted_timestamp,
+            user_id: redacted_user_id,
+            public_key: redacted_public_key,
+            profile: redacted_profile,
+            human_handle: _,
+        } = &*redacted.0;
+
+        author == redacted_author
+            && timestamp == redacted_timestamp
+            && user_id == redacted_user_id
+            && public_key == redacted_public_key
+            && profile == redacted_profile
     }
 
     #[getter]
@@ -270,8 +296,8 @@ impl DeviceCertificate {
         author_verify_key: &VerifyKey,
         expected_author: Option<&DeviceID>,
         expected_device: Option<&DeviceID>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::DeviceCertificate::verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::DeviceCertificate::verify_and_load(
             signed,
             &author_verify_key.0,
             match &expected_author {
@@ -280,7 +306,8 @@ impl DeviceCertificate {
             },
             expected_device.map(|x| &x.0),
         )
-        .map(|x| Self(Arc::new(x)))?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(|x| Self(Arc::new(x)))
     }
 
     fn dump_and_sign<'py>(&self, author_signkey: &SigningKey, py: Python<'py>) -> &'py PyBytes {
@@ -288,12 +315,34 @@ impl DeviceCertificate {
     }
 
     #[classmethod]
-    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> DataResult<Self> {
-        Ok(
-            libparsec_types::DeviceCertificate::unsecure_load(signed.to_vec().into())
-                .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
-                .map(|x| Self(Arc::new(x)))?,
-        )
+    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> PyResult<Self> {
+        libparsec_types::DeviceCertificate::unsecure_load(signed.to_vec().into())
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
+            .map(|x| Self(Arc::new(x)))
+    }
+
+    fn redacted_compare(&self, redacted: DeviceCertificate) -> bool {
+        let libparsec_types::DeviceCertificate {
+            author,
+            timestamp,
+            device_id,
+            verify_key,
+            device_label: _,
+        } = &*self.0;
+
+        let libparsec_types::DeviceCertificate {
+            author: redacted_author,
+            timestamp: redacted_timestamp,
+            device_id: redacted_device_id,
+            verify_key: redacted_verify_key,
+            device_label: _,
+        } = &*redacted.0;
+
+        author == redacted_author
+            && timestamp == redacted_timestamp
+            && device_id == redacted_device_id
+            && verify_key == redacted_verify_key
     }
 
     #[getter]
@@ -386,14 +435,15 @@ impl RevokedUserCertificate {
         author_verify_key: &VerifyKey,
         expected_author: &DeviceID,
         expected_user: Option<&UserID>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::RevokedUserCertificate::verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::RevokedUserCertificate::verify_and_load(
             signed,
             &author_verify_key.0,
             &expected_author.0,
             expected_user.map(|x| &x.0),
         )
-        .map(|x| Self(Arc::new(x)))?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(|x| Self(Arc::new(x)))
     }
 
     fn dump_and_sign<'py>(&self, author_signkey: &SigningKey, py: Python<'py>) -> &'py PyBytes {
@@ -401,12 +451,11 @@ impl RevokedUserCertificate {
     }
 
     #[classmethod]
-    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> DataResult<Self> {
-        Ok(
-            libparsec_types::RevokedUserCertificate::unsecure_load(signed.to_vec().into())
-                .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
-                .map(|x| Self(Arc::new(x)))?,
-        )
+    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> PyResult<Self> {
+        libparsec_types::RevokedUserCertificate::unsecure_load(signed.to_vec().into())
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
+            .map(|x| Self(Arc::new(x)))
     }
 
     #[getter]
@@ -488,14 +537,15 @@ impl UserUpdateCertificate {
         author_verify_key: &VerifyKey,
         expected_author: &DeviceID,
         expected_user: Option<&UserID>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::UserUpdateCertificate::verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::UserUpdateCertificate::verify_and_load(
             signed,
             &author_verify_key.0,
             &expected_author.0,
             expected_user.map(|x| &x.0),
         )
-        .map(|x| Self(Arc::new(x)))?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(|x| Self(Arc::new(x)))
     }
 
     fn dump_and_sign<'py>(&self, author_signkey: &SigningKey, py: Python<'py>) -> &'py PyBytes {
@@ -503,12 +553,11 @@ impl UserUpdateCertificate {
     }
 
     #[classmethod]
-    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> DataResult<Self> {
-        Ok(
-            libparsec_types::UserUpdateCertificate::unsecure_load(signed.to_vec().into())
-                .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
-                .map(|x| Self(Arc::new(x)))?,
-        )
+    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> PyResult<Self> {
+        libparsec_types::UserUpdateCertificate::unsecure_load(signed.to_vec().into())
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
+            .map(|x| Self(Arc::new(x)))
     }
 
     #[getter]
@@ -608,8 +657,8 @@ impl RealmRoleCertificate {
         expected_author: Option<&DeviceID>,
         expected_realm: Option<VlobID>,
         expected_user: Option<&UserID>,
-    ) -> DataResult<Self> {
-        Ok(libparsec_types::RealmRoleCertificate::verify_and_load(
+    ) -> PyResult<Self> {
+        libparsec_types::RealmRoleCertificate::verify_and_load(
             signed,
             &author_verify_key.0,
             match &expected_author {
@@ -619,7 +668,8 @@ impl RealmRoleCertificate {
             expected_realm.map(|x| x.0),
             expected_user.map(|x| &x.0),
         )
-        .map(|x| Self(Arc::new(x)))?)
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(|x| Self(Arc::new(x)))
     }
 
     fn dump_and_sign<'py>(&self, author_signkey: &SigningKey, py: Python<'py>) -> &'py PyBytes {
@@ -627,12 +677,11 @@ impl RealmRoleCertificate {
     }
 
     #[classmethod]
-    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> DataResult<Self> {
-        Ok(
-            libparsec_types::RealmRoleCertificate::unsecure_load(signed.to_vec().into())
-                .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
-                .map(|x| Self(Arc::new(x)))?,
-        )
+    fn unsecure_load(_cls: &PyType, signed: &[u8]) -> PyResult<Self> {
+        libparsec_types::RealmRoleCertificate::unsecure_load(signed.to_vec().into())
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map(|u| u.skip_validation(UnsecureSkipValidationReason::DataFromLocalStorage))
+            .map(|x| Self(Arc::new(x)))
     }
 
     #[classmethod]
@@ -704,14 +753,13 @@ impl SequesterAuthorityCertificate {
         _cls: &PyType,
         signed: &[u8],
         author_verify_key: &VerifyKey,
-    ) -> DataResult<Self> {
-        Ok(
-            libparsec_types::SequesterAuthorityCertificate::verify_and_load(
-                signed,
-                &author_verify_key.0,
-            )
-            .map(|x| Self(Arc::new(x)))?,
+    ) -> PyResult<Self> {
+        libparsec_types::SequesterAuthorityCertificate::verify_and_load(
+            signed,
+            &author_verify_key.0,
         )
+        .map_err(|e| PyValueError::new_err(e.to_string()))
+        .map(|x| Self(Arc::new(x)))
     }
 
     fn dump_and_sign<'py>(&self, author_signkey: &SigningKey, py: Python<'py>) -> &'py PyBytes {
@@ -756,8 +804,10 @@ impl SequesterServiceCertificate {
     }
 
     #[classmethod]
-    fn load(_cls: &PyType, data: &[u8]) -> DataResult<Self> {
-        Ok(libparsec_types::SequesterServiceCertificate::load(data).map(|x| Self(Arc::new(x)))?)
+    fn load(_cls: &PyType, data: &[u8]) -> PyResult<Self> {
+        libparsec_types::SequesterServiceCertificate::load(data)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
+            .map(|x| Self(Arc::new(x)))
     }
 
     fn dump<'py>(&self, py: Python<'py>) -> &'py PyBytes {
