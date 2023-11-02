@@ -145,6 +145,7 @@ FILES_WITH_VERSION_INFO: Dict[Path, Dict[Tool, RawRegexes]] = {
     / "docs/pyproject.toml": {
         Tool.Python: [ReplaceRegex(r'^python = "\^[0-9.]+"$', 'python = "^{version}"')]
     },
+    ROOT_DIR / "libparsec/version": {Tool.Parsec: [ReplaceRegex(r"^.*$", "{version}")]},
     ROOT_DIR
     / "licenses/BUSL-Scille.txt": {
         Tool.Parsec: [
@@ -228,7 +229,6 @@ FILES_WITH_VERSION_INFO: Dict[Path, Dict[Tool, RawRegexes]] = {
         Tool.License: [ReplaceRegex(r"license.workspace = true", "license.workspace = true")]
     },
     ROOT_DIR / "Cargo.toml": {Tool.License: [TOML_LICENSE_FIELD]},
-    ROOT_DIR / "version": {Tool.Parsec: [ReplaceRegex(r"^.*$", "{version}")]},
 }
 
 
