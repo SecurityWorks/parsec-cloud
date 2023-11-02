@@ -39,8 +39,7 @@ impl AnonymousCmds {
         proxy: ProxyConfig,
     ) -> anyhow::Result<Self> {
         let client = {
-            let builder =
-                reqwest::ClientBuilder::default().user_agent(crate::constant::CLIENT_USER_AGENT);
+            let builder = reqwest::ClientBuilder::default().user_agent(crate::CLIENT_USER_AGENT);
             let builder = proxy.configure_http_client(builder);
             builder.build()?
         };

@@ -2,7 +2,6 @@
 
 mod anonymous_cmds;
 mod authenticated_cmds;
-mod constant;
 mod error;
 mod invited_cmds;
 #[cfg(feature = "test-with-testbed")]
@@ -33,3 +32,6 @@ pub use libparsec_protocol as protocol;
 pub const PARSEC_CONTENT_TYPE: &str = "application/msgpack";
 
 pub const API_VERSION_HEADER_NAME: &str = "Api-Version";
+
+pub(crate) const CLIENT_USER_AGENT: &str =
+    concat!("Parsec-Client/", std::include_str!("../../../version"));
