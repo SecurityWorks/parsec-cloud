@@ -745,6 +745,6 @@
         "title": "Journal des modifications"
     },
     "Notification": {
-        "nextButton": "Okay !"
+        "nextButton": "fermer"
     }
 }

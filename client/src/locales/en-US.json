@@ -745,6 +745,6 @@
         "title": "Changes"
     },
     "Notification": {
-        "nextButton": "Okay!"
+        "nextButton": "close"
     }
 }
