@@ -12,6 +12,9 @@ mod testbed;
 mod validation;
 mod workspace;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod cli;
+
 pub use addr::*;
 pub use cancel::*;
 pub use client::*;
