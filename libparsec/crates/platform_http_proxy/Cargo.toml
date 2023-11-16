@@ -14,3 +14,7 @@ repository.workspace = true
 libparsec_types = { workspace = true }
 
 reqwest = { workspace = true, features = ["default-tls"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { workspace = true, features = ["Win32_Networking_WinHttp", "Win32_Foundation"] }
+widestring = { workspace = true }

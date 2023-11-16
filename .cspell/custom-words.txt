@@ -622,6 +622,7 @@ webpki
 websockets
 wfspy
 whereis
+widestring
 Wignore
 windowsiconhandler
 winfs
