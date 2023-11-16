@@ -192,7 +192,8 @@
             "organization": {
                 "storage": "Storage",
                 "information": "Information"
-            }
+            },
+            "recoveryExport": "Recovery files"
         },
         "previous": "Go back"
     },

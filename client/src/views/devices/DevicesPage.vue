@@ -80,7 +80,7 @@
           <div class="restore-password-button">
             <ion-button
               class="button-default"
-              @click="passwordSaved = true"
+              @click="goToExportRecoveryDevice()"
             >
               <ion-icon
                 :icon="sparkles"
@@ -141,6 +141,7 @@ import { NotificationKey } from '@/common/injectionKeys';
 import { NotificationManager, NotificationLevel, Notification } from '@/services/notificationManager';
 import GreetDeviceModal from '@/views/devices/GreetDeviceModal.vue';
 import { MsModalResult } from '@/components/core/ms-types';
+import { routerNavigateTo } from '@/router';
 
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const notificationManager: NotificationManager = inject(NotificationKey)!;
@@ -150,6 +151,10 @@ const passwordSaved = ref(false);
 onMounted(async () => {
   await refreshDevicesList();
 });
+
+async function goToExportRecoveryDevice(): Promise<void> {
+  routerNavigateTo('recoveryExport');
+}
 
 async function refreshDevicesList(): Promise<void> {
   const result = await listOwnDevices();

@@ -192,7 +192,8 @@
             "organization": {
                 "storage": "Stockage",
                 "information": "Informations"
-            }
+            },
+            "recoveryExport": "Fichiers de récupération"
         },
         "previous": "Précédent"
     },
