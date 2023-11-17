@@ -2,7 +2,7 @@
 
 use clap::{Parser, Subcommand};
 
-use libparsec::cli::ListDevices;
+use libparsec::cli::{InviteDevice, ListDevices};
 
 /// Parsec cli
 #[derive(Parser)]
@@ -13,6 +13,8 @@ struct Arg {
 
 #[derive(Subcommand)]
 enum Command {
+    /// Create device invitation
+    InviteDevice(InviteDevice),
     /// List all devices
     ListDevices(ListDevices),
 }
@@ -22,6 +24,7 @@ async fn main() {
     let arg = Arg::parse();
 
     match arg.command {
+        Command::InviteDevice(invite_device) => libparsec::cli::invite_device(invite_device).await,
         Command::ListDevices(list_devices) => libparsec::cli::list_devices(list_devices).await,
     }
 }

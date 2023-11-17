@@ -41,4 +41,6 @@ dirs = { workspace = true }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 clap = { workspace = true, features = ["default", "derive"] }
 hex-literal = { workspace = true }
+rpassword = { workspace = true }
+terminal-spinners = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread"] }

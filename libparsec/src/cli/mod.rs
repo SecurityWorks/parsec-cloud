@@ -1,9 +1,11 @@
 // Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 2016-present Scille SAS
 
+mod invite_device;
 mod list_devices;
 
 use libparsec_types::AvailableDevice;
 
+pub use invite_device::{invite_device, InviteDevice};
 pub use list_devices::{list_devices, ListDevices};
 
 const GREEN: &str = "\x1B[92m";
