@@ -5,11 +5,6 @@
     :title="title"
     :subtitle="subtitle"
     :close-button="{ visible: true }"
-    :cancel-button="{
-      label: $t('PasswordInputModal.cancel'),
-      disabled: false,
-      onClick: cancel,
-    }"
     :confirm-button="{
       label: okButtonText || $t('PasswordInputModal.ok'),
       disabled: password.length === 0,
