@@ -23,6 +23,7 @@
             </div>
             <ion-button
               @click="exportDevice()"
+              id="exportDevice"
             >
               {{ $t('ExportRecoveryDevicePage.actions.understand') }}
             </ion-button>

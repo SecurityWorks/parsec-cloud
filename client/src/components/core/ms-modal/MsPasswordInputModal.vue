@@ -36,7 +36,7 @@ export async function getPasswordFromUser(t: ComposerTranslation): Promise<strin
   const modal = await modalController.create({
     component: MsPasswordInputModal,
     canDismiss: true,
-    cssClass: 'text-input-modal',
+    cssClass: 'password-input-modal',
     componentProps: {
       title: t('PasswordInputModal.passwordNeeded'),
       subtitle: t('PasswordInputModal.enterPassword', { org: (clientInfo.ok ? clientInfo.value.organizationId : '') }),
