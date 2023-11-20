@@ -56,7 +56,7 @@ mod native {
 
     impl ProxyConfig {
         /// Set the http proxy to use, will overwrite the previous configuration.
-        pub fn with_http_proxy(mut self, proxy: String) -> anyhow::Result<Self> {
+        pub(crate) fn with_http_proxy(mut self, proxy: String) -> anyhow::Result<Self> {
             let proxy = Proxy::http(proxy)
                 .map_err(|e| anyhow::anyhow!("Invalid HTTP proxy configuration: {}", e))?;
             self.http_proxy.replace(proxy);
@@ -64,7 +64,7 @@ mod native {
         }
 
         /// Set the https proxy to use, will overwrite the previous configuration.
-        pub fn with_https_proxy(mut self, proxy: String) -> anyhow::Result<Self> {
+        pub(crate) fn with_https_proxy(mut self, proxy: String) -> anyhow::Result<Self> {
             let proxy = Proxy::https(proxy)
                 .map_err(|e| anyhow::anyhow!("Invalid HTTPS proxy configuration: {}", e))?;
             self.https_proxy.replace(proxy);
