@@ -539,12 +539,14 @@
         "passwordNeeded": "Mot de passe requis",
         "enterPassword": "Veuillez saisir le mot de passe {org} pour continuer.",
         "password": "Mot de passe",
-        "validate": "Valider"
+        "validate": "Valider",
+        "invalid": "Mot de passe invalide.",
+        "otherError": "Une erreur est survenue."
     },
-    "RecoveryDevicePage": {
+    "ExportRecoveryDevicePage": {
         "titles":{
             "recoveryFile": "Fichier de récupération",
-            "secretKey": "Clé secrète"
+            "recoveryKey": "Clé secrète"
         },
         "subtitles":{
             "newPassword": "Les fichiers de récupération vous permettront de recréer un mot de passe en cas d'oubli sur un appareil.",
@@ -562,6 +564,10 @@
         "toasts":{
             "fileDownloadOk": "Le fichier de récupération a bien été téléchargé",
             "keyDownloadOk": "La clé secrète a bien été téléchargée"
+        },
+        "filenames":{
+            "recoveryFile": "Parsec_Fichier_Récupération_{org}.data",
+            "recoveryKey": "Parsec_Code_Récupération_{org}.txt"
         }
     },
     "SasCodeChoice": {

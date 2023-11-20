@@ -10,15 +10,24 @@ export interface RecoveryDeviceData {
 }
 
 export enum RecoveryDeviceErrorTag {
-  Internal = 'internal'
+  Internal = 'internal',
+  Invalid = 'invalid',
 }
 
 export interface RecoveryDeviceError {
   tag: RecoveryDeviceErrorTag.Internal
 }
 
-export async function exportRecoveryDevice(_password: string): Promise<Result<RecoveryDeviceData, RecoveryDeviceError>> {
+export interface WrongAuthenticationError {
+  tag: RecoveryDeviceErrorTag.Invalid;
+}
+
+export async function exportRecoveryDevice(_password: string): Promise<Result<RecoveryDeviceData, WrongAuthenticationError>> {
   const handle = getParsecHandle();
+
+  if (_password !== 'P@ssw0rd.') {
+    return { ok: false, error: { tag: RecoveryDeviceErrorTag.Invalid }};
+  }
 
   if (handle !== null && !needsMocks()) {
     return {

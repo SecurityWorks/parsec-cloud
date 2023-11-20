@@ -21,6 +21,8 @@
 
 <script lang="ts">
 import MsPasswordInputModal from '@/components/core/ms-modal/MsPasswordInputModal.vue';
+import { getClientInfo } from '@/parsec/login';
+import { ComposerTranslation } from 'vue-i18n';
 
 export interface GetPasswordOptions {
   title: string;
@@ -29,16 +31,17 @@ export interface GetPasswordOptions {
   okButtonText?: string;
 }
 
-export async function getPasswordFromUser(options: GetPasswordOptions): Promise<string | null> {
+export async function getPasswordFromUser(t: ComposerTranslation): Promise<string | null> {
+  const clientInfo = await getClientInfo();
   const modal = await modalController.create({
     component: MsPasswordInputModal,
     canDismiss: true,
     cssClass: 'text-input-modal',
     componentProps: {
-      title: options.title,
-      subtitle: options.subtitle,
-      inputLabel: options.inputLabel,
-      okButtonText: options.okButtonText,
+      title: t('PasswordInputModal.passwordNeeded'),
+      subtitle: t('PasswordInputModal.enterPassword', { org: (clientInfo.ok ? clientInfo.value.organizationId : '') }),
+      inputLabel: t('PasswordInputModal.password'),
+      okButtonText: t('PasswordInputModal.validate'),
     },
   });
   await modal.present();
@@ -64,10 +67,6 @@ async function confirm(): Promise<boolean> {
     return false;
   }
   return await modalController.dismiss(password.value, MsModalResult.Confirm);
-}
-
-function cancel(): Promise<boolean> {
-  return modalController.dismiss(null, MsModalResult.Cancel);
 }
 </script>
 

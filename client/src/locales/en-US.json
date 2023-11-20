@@ -539,12 +539,14 @@
         "passwordNeeded": "Password needed",
         "enterPassword": "Please enter the password for {org} to continue.",
         "password": "Password",
-        "validate": "Validate"
+        "validate": "Validate",
+        "invalid": "Invalid password.",
+        "otherError": "An error has occurred."
     },
-    "RecoveryDevicePage": {
+    "ExportRecoveryDevicePage": {
         "titles":{
             "recoveryFile": "Recovery File",
-            "secretKey": "Secret Key"
+            "recoveryKey": "Secret Key"
         },
         "subtitles":{
             "newPassword": "Recovery files let you create a new password in the event that you forget it on this device.",
@@ -562,6 +564,10 @@
         "toasts":{
             "fileDownloadOk": "The recovery file was successfully downloaded",
             "keyDownloadOk": "The secret key was successfully downloaded"
+        },
+        "filenames":{
+            "recoveryFile": "Parsec_Recovery_File_{org}.data",
+            "recoveryKey": "Parsec_Recovery_Code_{org}.txt"
         }
     },
     "SasCodeChoice": {
