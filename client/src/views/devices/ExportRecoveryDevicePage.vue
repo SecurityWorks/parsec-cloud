@@ -5,7 +5,7 @@
     <ion-content :fullscreen="true">
       <div class="container">
         <div class="recovery-container">
-          <div v-show="state === ExportDevicePageState.Start">
+          <div v-if="state === ExportDevicePageState.Start">
             <ms-informative-text>
               {{ $t('ExportRecoveryDevicePage.subtitles.newPassword') }}
             </ms-informative-text>
@@ -28,7 +28,7 @@
               {{ $t('ExportRecoveryDevicePage.actions.understand') }}
             </ion-button>
           </div>
-          <div v-if="state === ExportDevicePageState.Download">
+          <div v-else-if="state === ExportDevicePageState.Download">
             <ms-informative-text>
               {{ $t('ExportRecoveryDevicePage.subtitles.keepFilesSeparate') }}
             </ms-informative-text>
@@ -36,14 +36,15 @@
             <div>
               <div class="block">
                 {{ $t('ExportRecoveryDevicePage.titles.recoveryFile') }}
-                <div v-if="!recoveryFileDownloaded">
+                <div v-show="!recoveryFileDownloaded">
                   <ion-button
                     @click="downloadRecoveryFile()"
+                    id="downloadButton"
                   >
                     {{ $t('ExportRecoveryDevicePage.actions.download') }}
                   </ion-button>
                 </div>
-                <div v-else>
+                <div v-show="recoveryFileDownloaded">
                   <ion-icon
                     :icon="checkmarkCircle"
                     class="checked"
@@ -53,14 +54,15 @@
               </div>
               <div class="block">
                 {{ $t('ExportRecoveryDevicePage.titles.recoveryKey') }}
-                <div v-if="!recoveryKeyDownloaded">
+                <div v-show="!recoveryKeyDownloaded">
                   <ion-button
                     @click="downloadRecoveryKey()"
+                    id="downloadButton"
                   >
                     {{ $t('ExportRecoveryDevicePage.actions.download') }}
                   </ion-button>
                 </div>
-                <div v-else>
+                <div v-show="recoveryKeyDownloaded">
                   <ion-icon
                     :icon="checkmarkCircle"
                     class="checked"
@@ -72,10 +74,11 @@
                 ref="downloadLink"
                 v-show="false"
               />
-              <div v-if="recoveryKeyDownloaded && recoveryFileDownloaded">
+              <div v-show="recoveryKeyDownloaded && recoveryFileDownloaded">
                 <ion-button
                   class="return-btn button-outline"
                   @click="routerNavigateTo('workspaces')"
+                  id="return-button"
                 >
                   <ion-icon
                     :icon="home"
@@ -99,7 +102,7 @@ import {
   IonButton,
 } from '@ionic/vue';
 import MsInformativeText from '@/components/core/ms-text/MsInformativeText.vue';
-import { ref, inject } from 'vue';
+import { ref, inject, onMounted } from 'vue';
 import { getPasswordFromUser } from '@/components/core/ms-modal/MsPasswordInputModal.vue';
 import { useI18n } from 'vue-i18n';
 import { exportRecoveryDevice, RecoveryDeviceErrorTag } from '@/parsec';
@@ -122,9 +125,21 @@ const downloadLink = ref();
 const recoveryKeyDownloaded = ref(false);
 const recoveryFileDownloaded = ref(false);
 const notificationManager: NotificationManager = inject(NotificationKey)!;
+const orgId = ref('');
+
+onMounted(async (): Promise<void> => {
+  const clientInfo = await getClientInfo();
+  orgId.value = clientInfo.ok ? clientInfo.value.organizationId : '';
+});
 
 async function exportDevice(): Promise<void> {
-  const password = await getPasswordFromUser(t);
+  const password = await getPasswordFromUser(
+    {
+      title: t('PasswordInputModal.passwordNeeded'),
+      subtitle: t('PasswordInputModal.enterPassword', { org: orgId }),
+      inputLabel: t('PasswordInputModal.password'),
+      okButtonText: t('PasswordInputModal.validate'),
+    });
   if (!password) {
     return;
   }
@@ -147,8 +162,7 @@ async function exportDevice(): Promise<void> {
 }
 
 async function downloadRecoveryKey(): Promise<void> {
-  const clientInfo = await getClientInfo();
-  fileDownload(code, t('ExportRecoveryDevicePage.filenames.recoveryKey', { org: (clientInfo.ok ? clientInfo.value.organizationId : '') }));
+  fileDownload(code, t('ExportRecoveryDevicePage.filenames.recoveryKey', { org: orgId }));
   recoveryKeyDownloaded.value = true;
   notificationManager.showToast(
     new Notification({
@@ -159,8 +173,7 @@ async function downloadRecoveryKey(): Promise<void> {
 }
 
 async function downloadRecoveryFile(): Promise<void> {
-  const clientInfo = await getClientInfo();
-  fileDownload(file, t('ExportRecoveryDevicePage.filenames.recoveryFile', { org: (clientInfo.ok ? clientInfo.value.organizationId : '') }));
+  fileDownload(file, t('ExportRecoveryDevicePage.filenames.recoveryFile', { org: orgId }));
   recoveryFileDownloaded.value = true;
   notificationManager.showToast(
     new Notification({

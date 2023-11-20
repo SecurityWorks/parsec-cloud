@@ -21,28 +21,20 @@
 
 <script lang="ts">
 import MsPasswordInputModal from '@/components/core/ms-modal/MsPasswordInputModal.vue';
-import { getClientInfo } from '@/parsec/login';
-import { ComposerTranslation } from 'vue-i18n';
 
-export interface GetPasswordOptions {
+interface GetPasswordOptions {
   title: string;
   subtitle?: string;
   inputLabel?: string;
   okButtonText?: string;
 }
 
-export async function getPasswordFromUser(t: ComposerTranslation): Promise<string | null> {
-  const clientInfo = await getClientInfo();
+export async function getPasswordFromUser(options: GetPasswordOptions): Promise<string | null> {
   const modal = await modalController.create({
     component: MsPasswordInputModal,
     canDismiss: true,
     cssClass: 'password-input-modal',
-    componentProps: {
-      title: t('PasswordInputModal.passwordNeeded'),
-      subtitle: t('PasswordInputModal.enterPassword', { org: (clientInfo.ok ? clientInfo.value.organizationId : '') }),
-      inputLabel: t('PasswordInputModal.password'),
-      okButtonText: t('PasswordInputModal.validate'),
-    },
+    componentProps: options,
   });
   await modal.present();
   const result = await modal.onWillDismiss();
