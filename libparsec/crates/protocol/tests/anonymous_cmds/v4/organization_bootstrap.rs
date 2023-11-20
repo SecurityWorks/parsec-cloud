@@ -93,7 +93,7 @@ pub fn req() {
             anonymous_cmds::AnyCmdReq::OrganizationBootstrap(
                 anonymous_cmds::organization_bootstrap::Req {
                     bootstrap_token:
-                        "0db537dee3ff9a3c2f76e337a4461f41fb3d738f35eb48f3759046dfbedb2e79".into(),
+                        Some("0db537dee3ff9a3c2f76e337a4461f41fb3d738f35eb48f3759046dfbedb2e79".into()),
                     root_verify_key: VerifyKey::try_from(hex!(
                         "be2976732cec8ca94eedcf0aafd413cd159363e0fadc9e68572c77a1e17d9bbd"
                     ))
@@ -186,7 +186,7 @@ pub fn req() {
             anonymous_cmds::AnyCmdReq::OrganizationBootstrap(
                 anonymous_cmds::organization_bootstrap::Req {
                     bootstrap_token:
-                        "0db537dee3ff9a3c2f76e337a4461f41fb3d738f35eb48f3759046dfbedb2e79".into(),
+                        Some("0db537dee3ff9a3c2f76e337a4461f41fb3d738f35eb48f3759046dfbedb2e79".into()),
                     root_verify_key: VerifyKey::try_from(hex!(
                         "be2976732cec8ca94eedcf0aafd413cd159363e0fadc9e68572c77a1e17d9bbd"
                     ))
@@ -253,9 +253,7 @@ pub fn rep_invalid_certification() {
         "69636174696f6e"
     );
 
-    let expected = anonymous_cmds::organization_bootstrap::Rep::InvalidCertification {
-        reason: Some("foobar".into()),
-    };
+    let expected = anonymous_cmds::organization_bootstrap::Rep::InvalidCertificate;
 
     let data = anonymous_cmds::organization_bootstrap::Rep::load(&raw).unwrap();
 
@@ -277,9 +275,7 @@ pub fn rep_invalid_data() {
     //
     let raw = hex!("82a6726561736f6ea6666f6f626172a6737461747573ac696e76616c69645f64617461");
 
-    let expected = anonymous_cmds::organization_bootstrap::Rep::InvalidData {
-        reason: Some("foobar".into()),
-    };
+    let expected = anonymous_cmds::organization_bootstrap::Rep::InvalidCertificate;
 
     let data = anonymous_cmds::organization_bootstrap::Rep::load(&raw).unwrap();
 
