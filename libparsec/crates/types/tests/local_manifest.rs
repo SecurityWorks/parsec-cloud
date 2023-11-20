@@ -645,7 +645,7 @@ fn serde_local_workspace_manifest(
             updated: now,
             need_sync: true,
             speculative: false,
-            last_processed_message: 4,
+            legacy_last_processed_message: 4,
             base: UserManifest {
                 author: alice.device_id.to_owned(),
                 timestamp: now,
@@ -653,7 +653,7 @@ fn serde_local_workspace_manifest(
                 version: 42,
                 created: now,
                 updated: now,
-                last_processed_message: 3,
+                legacy_last_processed_message: 3,
                 workspaces: vec![
                     WorkspaceEntry {
                         name: "wksp1".parse().unwrap(),
@@ -661,8 +661,8 @@ fn serde_local_workspace_manifest(
                         key: SecretKey::from(hex!(
                             "6507907d33bae6b5980b32fa03f3ebac56141b126e44f352ea46c5f22cd5ac57"
                         )),
-                        encryption_revision: 2,
-                        encrypted_on: now,
+                        legacy_encryption_revision: 2,
+                        legacy_encrypted_on: now,
                         legacy_role_cache_timestamp: now,
                         legacy_role_cache_value: Some(RealmRole::Owner),
                     },
@@ -675,8 +675,8 @@ fn serde_local_workspace_manifest(
                     key: SecretKey::from(hex!(
                         "6507907d33bae6b5980b32fa03f3ebac56141b126e44f352ea46c5f22cd5ac57"
                     )),
-                    encryption_revision: 2,
-                    encrypted_on: now,
+                    legacy_encryption_revision: 2,
+                    legacy_encrypted_on: now,
                     legacy_role_cache_timestamp: now,
                     legacy_role_cache_value: Some(RealmRole::Owner),
                 },
@@ -686,8 +686,8 @@ fn serde_local_workspace_manifest(
                     key: SecretKey::from(hex!(
                         "c21ed3aae92c648cb1b6df8be149ebc872247db0dbd37686ff2d075e2d7505cc"
                     )),
-                    encryption_revision: 1,
-                    encrypted_on: now,
+                    legacy_encryption_revision: 1,
+                    legacy_encrypted_on: now,
                     legacy_role_cache_timestamp: now,
                     legacy_role_cache_value: None,
                 },
@@ -758,7 +758,7 @@ fn serde_local_workspace_manifest(
             updated: now,
             need_sync: false,
             speculative: false,
-            last_processed_message: 3,
+            legacy_last_processed_message: 3,
             base: UserManifest {
                 author: alice.device_id.to_owned(),
                 timestamp: now,
@@ -766,7 +766,7 @@ fn serde_local_workspace_manifest(
                 version: 42,
                 created: now,
                 updated: now,
-                last_processed_message: 3,
+                legacy_last_processed_message: 3,
                 workspaces: vec![
                     WorkspaceEntry {
                         name: "wksp1".parse().unwrap(),
@@ -774,8 +774,8 @@ fn serde_local_workspace_manifest(
                         key: SecretKey::from(hex!(
                             "6507907d33bae6b5980b32fa03f3ebac56141b126e44f352ea46c5f22cd5ac57"
                         )),
-                        encryption_revision: 2,
-                        encrypted_on: now,
+                        legacy_encryption_revision: 2,
+                        legacy_encrypted_on: now,
                         legacy_role_cache_timestamp: now,
                         legacy_role_cache_value: Some(RealmRole::Owner),
                     },
@@ -788,8 +788,8 @@ fn serde_local_workspace_manifest(
                     key: SecretKey::from(hex!(
                         "6507907d33bae6b5980b32fa03f3ebac56141b126e44f352ea46c5f22cd5ac57"
                     )),
-                    encryption_revision: 2,
-                    encrypted_on: now,
+                    legacy_encryption_revision: 2,
+                    legacy_encrypted_on: now,
                     legacy_role_cache_timestamp: now,
                     legacy_role_cache_value: Some(RealmRole::Owner),
                 },
@@ -833,7 +833,7 @@ fn serde_local_workspace_manifest(
             updated: now,
             need_sync: true,
             speculative: true,
-            last_processed_message: 0,
+            legacy_last_processed_message: 0,
             base: UserManifest {
                 author: alice.device_id.to_owned(),
                 timestamp: now,
@@ -841,7 +841,7 @@ fn serde_local_workspace_manifest(
                 version: 0,
                 created: now,
                 updated: now,
-                last_processed_message: 0,
+                legacy_last_processed_message: 0,
                 workspaces: vec![],
             },
             workspaces: vec![],
@@ -883,7 +883,7 @@ fn serde_local_workspace_manifest(
             updated: now,
             need_sync: false,
             speculative: false,
-            last_processed_message: 0,
+            legacy_last_processed_message: 0,
             workspaces: vec![],
             base: UserManifest {
                 author: alice.device_id.to_owned(),
@@ -892,7 +892,7 @@ fn serde_local_workspace_manifest(
                 version: 0,
                 created: now,
                 updated: now,
-                last_processed_message: 0,
+                legacy_last_processed_message: 0,
                 workspaces: vec![],
             },
         }
@@ -1907,9 +1907,9 @@ fn local_user_manifest_new(timestamp: DateTime) {
 #[rstest]
 #[case::empty((0, vec![]))]
 #[case::last_processed_message((10, vec![]))]
-#[case::workspaces((0, vec![WorkspaceEntry::generate("alice".parse().unwrap(), "2000-01-01T00:00:00Z".parse().unwrap())]))]
+#[case::workspaces((0, vec![WorkspaceEntry::generate("alice".parse().unwrap())]))]
 fn local_user_manifest_from_remote(timestamp: DateTime, #[case] input: (u64, Vec<WorkspaceEntry>)) {
-    let (last_processed_message, workspaces) = input;
+    let (legacy_last_processed_message, workspaces) = input;
     let um = UserManifest {
         author: DeviceID::default(),
         timestamp,
@@ -1917,7 +1917,7 @@ fn local_user_manifest_from_remote(timestamp: DateTime, #[case] input: (u64, Vec
         version: 0,
         created: timestamp,
         updated: timestamp,
-        last_processed_message,
+        legacy_last_processed_message,
         workspaces,
     };
 
@@ -1933,15 +1933,14 @@ fn local_user_manifest_from_remote(timestamp: DateTime, #[case] input: (u64, Vec
 fn local_user_manifest_to_remote(timestamp: DateTime) {
     let t1 = timestamp;
     let t2 = t1.add_us(1);
-    let t3 = t2.add_us(1);
     let author = DeviceID::default();
     let id = VlobID::default();
     let speculative = false;
     let mut lum = LocalUserManifest::new(author, t1, Some(id), speculative);
 
     lum.workspaces
-        .push(WorkspaceEntry::generate("alice".parse().unwrap(), t2));
-    lum.updated = t3;
+        .push(WorkspaceEntry::generate("alice".parse().unwrap()));
+    lum.updated = t2;
 
     let author = DeviceID::default();
     let um = lum.to_remote(author.clone(), timestamp);
@@ -1964,7 +1963,7 @@ fn local_user_manifest_match_remote(timestamp: DateTime) {
         version: 0,
         created: timestamp,
         updated: timestamp,
-        last_processed_message: 0,
+        legacy_last_processed_message: 0,
         workspaces: vec![],
     };
 
@@ -1972,7 +1971,7 @@ fn local_user_manifest_match_remote(timestamp: DateTime) {
         base: um.clone(),
         need_sync: false,
         updated: timestamp,
-        last_processed_message: 0,
+        legacy_last_processed_message: 0,
         workspaces: vec![],
         speculative: false,
     };

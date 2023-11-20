@@ -2,14 +2,10 @@
 
 mod create;
 mod merge;
-mod message;
-// mod reencryption;
 mod share;
 mod sync;
 
 pub use create::*;
-pub use message::*;
-// pub use reencryption::*;
 pub use share::*;
 pub use sync::*;
 
@@ -72,14 +68,6 @@ impl UserOps {
     /// Low-level access, should be only needed for tests
     pub(crate) fn get_user_manifest(&self) -> Arc<LocalUserManifest> {
         self.storage.get_user_manifest()
-    }
-
-    #[allow(unused)]
-    pub(crate) async fn process_last_messages(
-        &self,
-        latest_known_index: Option<IndexInt>,
-    ) -> Result<(), ProcessLastMessagesError> {
-        message::process_last_messages(self, latest_known_index).await
     }
 
     #[allow(unused)]

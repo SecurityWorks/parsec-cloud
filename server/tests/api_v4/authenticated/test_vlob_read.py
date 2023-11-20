@@ -72,5 +72,7 @@ async def test_authenticated_vlob_read_ok(coolorg: CoolorgRpcClients, backend: B
         vlobs=[
             (vlob1_id, coolorg.alice.device_id, 3, DateTime(2020, 1, 3), b"<block content v3>"),
             (vlob2_id, coolorg.alice.device_id, 1, DateTime(2020, 1, 1), b"<block content v1>"),
-        ]
+        ],
+        last_common_certificate_timestamp=DateTime(2000, 1, 6),
+        last_realm_certificate_timestamp=DateTime(2000, 1, 10),
     )

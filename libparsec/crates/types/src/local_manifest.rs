@@ -913,7 +913,9 @@ pub struct LocalUserManifest {
     pub base: UserManifest,
     pub need_sync: bool,
     pub updated: DateTime,
-    pub last_processed_message: IndexInt,
+    // Message is deprecated in Parsec v3, this field is only kept for compatibility reason.
+    #[serde(rename = "last_processed_message")]
+    pub legacy_last_processed_message: IndexInt,
     pub workspaces: Vec<WorkspaceEntry>,
     // Speculative placeholders are created when we want to access the
     // user manifest but didn't retrieve it from backend yet. This implies:
@@ -932,16 +934,31 @@ impl_local_manifest_dump_load!(LocalUserManifest);
 
 parsec_data!("schema/local_manifest/local_user_manifest.json5");
 
-impl_transparent_data_format_conversion!(
-    LocalUserManifest,
-    LocalUserManifestData,
-    base,
-    need_sync,
-    updated,
-    last_processed_message,
-    workspaces,
-    speculative
-);
+impl From<LocalUserManifestData> for LocalUserManifest {
+    fn from(data: LocalUserManifestData) -> Self {
+        Self {
+            base: data.base.into(),
+            need_sync: data.need_sync.into(),
+            updated: data.updated.into(),
+            legacy_last_processed_message: data.last_processed_message.into(),
+            workspaces: data.workspaces.into(),
+            speculative: data.speculative.into(),
+        }
+    }
+}
+impl From<LocalUserManifest> for LocalUserManifestData {
+    fn from(obj: LocalUserManifest) -> Self {
+        Self {
+            ty: Default::default(),
+            base: obj.base.into(),
+            need_sync: obj.need_sync.into(),
+            updated: obj.updated.into(),
+            last_processed_message: obj.legacy_last_processed_message.into(),
+            workspaces: obj.workspaces.into(),
+            speculative: obj.speculative.into(),
+        }
+    }
+}
 
 impl LocalUserManifest {
     pub fn new(
@@ -958,12 +975,12 @@ impl LocalUserManifest {
                 version: 0,
                 created: timestamp,
                 updated: timestamp,
-                last_processed_message: 0,
+                legacy_last_processed_message: 0,
                 workspaces: vec![],
             },
             need_sync: true,
             updated: timestamp,
-            last_processed_message: 0,
+            legacy_last_processed_message: 0,
             workspaces: vec![],
             speculative,
         }
@@ -977,16 +994,6 @@ impl LocalUserManifest {
         self.need_sync = true;
         self.updated = timestamp;
         self.evolve_workspaces(workspace)
-    }
-
-    pub fn evolve_last_processed_message_and_mark_updated(
-        &mut self,
-        last_processed_message: IndexInt,
-        timestamp: DateTime,
-    ) {
-        self.need_sync = true;
-        self.updated = timestamp;
-        self.last_processed_message = last_processed_message;
     }
 
     pub fn evolve_workspaces(&mut self, workspace: WorkspaceEntry) {
@@ -1011,7 +1018,7 @@ impl LocalUserManifest {
             base,
             need_sync: false,
             updated: remote.updated,
-            last_processed_message: remote.last_processed_message,
+            legacy_last_processed_message: remote.legacy_last_processed_message,
             workspaces: remote.workspaces,
             speculative: false,
         }
@@ -1025,7 +1032,7 @@ impl LocalUserManifest {
             version: self.base.version + 1,
             created: self.base.created,
             updated: self.updated,
-            last_processed_message: self.last_processed_message,
+            legacy_last_processed_message: self.legacy_last_processed_message,
             workspaces: self.workspaces.clone(),
         }
     }

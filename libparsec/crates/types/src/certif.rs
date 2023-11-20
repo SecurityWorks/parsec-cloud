@@ -216,6 +216,22 @@ impl From<CertificateSignerOwned> for Option<DeviceID> {
     }
 }
 
+impl<'a> std::cmp::PartialEq<CertificateSignerOwned> for CertificateSignerRef<'a> {
+  fn eq(&self, other: &CertificateSignerOwned) -> bool {
+    match (self, other) {
+        (CertificateSignerRef::Root, CertificateSignerOwned::Root) => true,
+        (CertificateSignerRef::User(a), CertificateSignerOwned::User(b)) => *a == b,
+        _ => false,
+    }
+  }
+}
+
+impl<'a> std::cmp::PartialEq<CertificateSignerRef<'a>> for CertificateSignerOwned {
+  fn eq(&self, other: &CertificateSignerRef<'a>) -> bool {
+    other == self
+  }
+}
+
 /*
  * UserCertificate
  */
@@ -866,6 +882,179 @@ impl UnsecureAnyCertificate {
             UnsecureAnyCertificate::RealmRole(unsecure) => unsecure.hint(),
             UnsecureAnyCertificate::SequesterAuthority(unsecure) => unsecure.hint(),
             UnsecureAnyCertificate::SequesterService(unsecure) => unsecure.hint(),
+        }
+    }
+}
+
+/*
+ * CommonTopicCertificate
+ */
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CommonTopicArcCertificate {
+    User(Arc<UserCertificate>),
+    Device(Arc<DeviceCertificate>),
+    UserUpdate(Arc<UserUpdateCertificate>),
+    RevokedUser(Arc<RevokedUserCertificate>),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum CommonTopicCertificate {
+    User(UserCertificate),
+    Device(DeviceCertificate),
+    UserUpdate(UserUpdateCertificate),
+    RevokedUser(RevokedUserCertificate),
+}
+
+#[derive(Debug)]
+pub enum UnsecureCommonTopicCertificate {
+    User(UnsecureUserCertificate),
+    Device(UnsecureDeviceCertificate),
+    UserUpdate(UnsecureUserUpdateCertificate),
+    RevokedUser(UnsecureRevokedUserCertificate),
+}
+
+impl CommonTopicCertificate {
+    pub fn unsecure_load(signed: Bytes) -> Result<UnsecureCommonTopicCertificate, DataError> {
+        let (_, compressed) =
+            VerifyKey::unsecure_unwrap(signed.as_ref()).map_err(|_| DataError::Signature)?;
+        let unsecure = load::<Self>(compressed)?;
+        Ok(match unsecure {
+            CommonTopicCertificate::User(unsecure) => {
+                UnsecureCommonTopicCertificate::User(UnsecureUserCertificate { signed, unsecure })
+            }
+            CommonTopicCertificate::Device(unsecure) => {
+                UnsecureCommonTopicCertificate::Device(UnsecureDeviceCertificate { signed, unsecure })
+            }
+            CommonTopicCertificate::RevokedUser(unsecure) => {
+                UnsecureCommonTopicCertificate::RevokedUser(UnsecureRevokedUserCertificate {
+                    signed,
+                    unsecure,
+                })
+            }
+            CommonTopicCertificate::UserUpdate(unsecure) => {
+                UnsecureCommonTopicCertificate::UserUpdate(UnsecureUserUpdateCertificate {
+                    signed,
+                    unsecure,
+                })
+            }
+        })
+    }
+}
+
+impl UnsecureCommonTopicCertificate {
+    pub fn timestamp(&self) -> &DateTime {
+        match self {
+            UnsecureCommonTopicCertificate::User(unsecure) => unsecure.timestamp(),
+            UnsecureCommonTopicCertificate::Device(unsecure) => unsecure.timestamp(),
+            UnsecureCommonTopicCertificate::RevokedUser(unsecure) => unsecure.timestamp(),
+            UnsecureCommonTopicCertificate::UserUpdate(unsecure) => unsecure.timestamp(),
+        }
+    }
+
+    pub fn hint(&self) -> String {
+        match self {
+            UnsecureCommonTopicCertificate::User(unsecure) => unsecure.hint(),
+            UnsecureCommonTopicCertificate::Device(unsecure) => unsecure.hint(),
+            UnsecureCommonTopicCertificate::RevokedUser(unsecure) => unsecure.hint(),
+            UnsecureCommonTopicCertificate::UserUpdate(unsecure) => unsecure.hint(),
+        }
+    }
+
+    pub fn skip_validation(
+        self,
+        reason: UnsecureSkipValidationReason,
+    ) -> CommonTopicArcCertificate {
+        match self {
+            UnsecureCommonTopicCertificate::User(unsecure) => {
+                CommonTopicArcCertificate::User(Arc::new(unsecure.skip_validation(reason)))
+            }
+            UnsecureCommonTopicCertificate::Device(unsecure) => {
+                CommonTopicArcCertificate::Device(Arc::new(unsecure.skip_validation(reason)))
+            }
+            UnsecureCommonTopicCertificate::RevokedUser(unsecure) => {
+                CommonTopicArcCertificate::RevokedUser(Arc::new(unsecure.skip_validation(reason)))
+            }
+            UnsecureCommonTopicCertificate::UserUpdate(unsecure) => {
+                CommonTopicArcCertificate::UserUpdate(Arc::new(unsecure.skip_validation(reason)))
+            }
+        }
+    }
+}
+
+/*
+ * SequesterTopicCertificate
+ */
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SequesterTopicArcCertificate {
+    SequesterAuthority(Arc<SequesterAuthorityCertificate>),
+    SequesterService(Arc<SequesterServiceCertificate>),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum SequesterTopicCertificate {
+    SequesterAuthority(SequesterAuthorityCertificate),
+    SequesterService(SequesterServiceCertificate),
+}
+
+impl SequesterTopicCertificate {
+    /// Sequester authority is the very first certificate that should be provide. After
+    /// that, all subsequent certificates in this topic must be signed by the authority.
+    /// Hence only the authority requires to support the unsecure load.
+    pub fn unsecure_load_authority(signed: Bytes) -> Result<UnsecureSequesterAuthorityCertificate, DataError> {
+        let (_, compressed) =
+            VerifyKey::unsecure_unwrap(signed.as_ref()).map_err(|_| DataError::Signature)?;
+        let unsecure = load::<SequesterAuthorityCertificate>(compressed)?;
+        Ok(UnsecureSequesterAuthorityCertificate { signed, unsecure })
+    }
+}
+
+/*
+ * RealmTopicCertificate
+ */
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RealmTopicArcCertificate {
+    RealmRole(Arc<RealmRoleCertificate>),
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(untagged)]
+pub enum RealmTopicCertificate {
+    RealmRole(RealmRoleCertificate),
+}
+
+#[derive(Debug)]
+pub enum UnsecureRealmTopicCertificate {
+    RealmRole(UnsecureRealmRoleCertificate),
+}
+
+impl RealmTopicCertificate {
+    pub fn unsecure_load(signed: Bytes) -> Result<UnsecureRealmTopicCertificate, DataError> {
+        let (_, compressed) =
+            VerifyKey::unsecure_unwrap(signed.as_ref()).map_err(|_| DataError::Signature)?;
+        let unsecure = load::<Self>(compressed)?;
+        Ok(match unsecure {
+            RealmTopicCertificate::RealmRole(unsecure) => {
+                UnsecureRealmTopicCertificate::RealmRole(UnsecureRealmRoleCertificate { signed, unsecure })
+            }
+        })
+    }
+}
+
+impl UnsecureRealmTopicCertificate {
+    pub fn timestamp(&self) -> &DateTime {
+        match self {
+            UnsecureRealmTopicCertificate::RealmRole(unsecure) => unsecure.timestamp(),
+        }
+    }
+
+    pub fn hint(&self) -> String {
+        match self {
+            UnsecureRealmTopicCertificate::RealmRole(unsecure) => unsecure.hint(),
         }
     }
 }

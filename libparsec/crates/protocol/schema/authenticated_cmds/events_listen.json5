@@ -177,6 +177,16 @@
                                 // Blob is only provide if it is small enough
                                 "name": "blob",
                                 "type": "RequiredOption<Bytes>"
+                            },
+                            // The vlob requires common&realm certificates for validation,
+                            // those fields help the client ensure it isn't missing some.
+                            {
+                                "name": "last_common_certificate_timestamp",
+                                "type": "DateTime"
+                            },
+                            {
+                                "name": "last_realm_certificate_timestamp",
+                                "type": "DateTime"
                             }
                         ]
                     }

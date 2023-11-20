@@ -14,7 +14,7 @@ pub enum EnsureRealmsCreatedError {
     // Note `InvalidManifest` here, this is because we self-repair in case of invalid
     // user manifest (given otherwise the client would be stuck for good !)
     #[error("Our clock ({client_timestamp}) and the server's one ({server_timestamp}) are too far apart")]
-    BadTimestamp {
+    TimestampOutOfBallpark {
         server_timestamp: DateTime,
         client_timestamp: DateTime,
         ballpark_client_early_offset: f64,
@@ -69,7 +69,7 @@ async fn create_realm_idempotent(
         use authenticated_cmds::latest::realm_create::{Rep, Req};
 
         let req = Req {
-            role_certificate: certif.into(),
+            realm_role_certificate: certif.into(),
         };
 
         let rep = ops.cmds.send(req).await?;
@@ -79,38 +79,36 @@ async fn create_realm_idempotent(
             // It's possible a previous attempt to create this realm
             // succeeded but we didn't receive the confirmation, hence
             // we play idempotent here.
-            Rep::AlreadyExists => Ok(()),
+            Rep::RealmAlreadyExists => Ok(()),
             Rep::RequireGreaterTimestamp {
                 strictly_greater_than,
             } => {
                 timestamp = std::cmp::max(strictly_greater_than, ops.device.time_provider.now());
                 continue;
             }
-            Rep::BadTimestamp {
-                backend_timestamp,
+            Rep::TimestampOutOfBallpark {
+                server_timestamp,
                 ballpark_client_early_offset,
                 ballpark_client_late_offset,
                 client_timestamp,
                 ..
             } => {
                 let event = EventTooMuchDriftWithServerClock {
-                    backend_timestamp,
+                    server_timestamp,
                     ballpark_client_early_offset,
                     ballpark_client_late_offset,
                     client_timestamp,
                 };
                 ops.event_bus.send(&event);
 
-                Err(EnsureRealmsCreatedError::BadTimestamp {
-                    server_timestamp: backend_timestamp,
+                Err(EnsureRealmsCreatedError::TimestampOutOfBallpark {
+                    server_timestamp,
                     client_timestamp,
                     ballpark_client_early_offset,
                     ballpark_client_late_offset,
                 })
             }
-            bad_rep @ (Rep::InvalidData { .. }
-            | Rep::InvalidCertification { .. }
-            | Rep::NotFound { .. }
+            bad_rep @ (Rep::InvalidCertificate { .. }
             | Rep::UnknownStatus { .. }) => {
                 Err(anyhow::anyhow!("Unexpected server response: {:?}", bad_rep).into())
             }

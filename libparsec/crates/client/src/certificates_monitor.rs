@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use libparsec_platform_async::{channel, spawn, JoinHandle};
-use libparsec_types::prelude::*;
+use libparsec_platform_storage::certificates::PerTopicLastTimestamps;
 
 use crate::{
     certificates_ops::{CertificatesOps, PollServerError},
@@ -20,7 +20,7 @@ pub struct CertificatesMonitor {
 impl CertificatesMonitor {
     pub async fn start(certifs_ops: Arc<CertificatesOps>, event_bus: EventBus) -> Self {
         enum Action {
-            NewCertificate(IndexInt),
+            NewCertificate(PerTopicLastTimestamps),
             MissedServerEvents,
         }
         // Channel starts empty, hence the monitor will stay idle until the connection
@@ -35,7 +35,7 @@ impl CertificatesMonitor {
                 })
             },
             event_bus.connect(move |e: &EventCertificatesUpdated| {
-                let _ = tx.send(Action::NewCertificate(e.index));
+                let _ = tx.send(Action::NewCertificate(e.last_timestamps.clone()));
             }),
         );
 
@@ -54,13 +54,19 @@ impl CertificatesMonitor {
                 // Need a loop here to retry the operation in case the server is not available
                 loop {
                     if let Err(err) = certifs_ops
-                        .poll_server_for_new_certificates(noop_if_newer_than)
+                        .poll_server_for_new_certificates(noop_if_newer_than.clone())
                         .await
                     {
                         match err {
                             PollServerError::Offline => {
                                 event_bus.wait_server_online().await;
                                 continue;
+                            }
+                            PollServerError::StorageStopped => {
+                                // Shouldn't occur in practice given the monitors are expected
+                                // to be stopped before the opses. In anycase we have no
+                                // choice but to also stop.
+                                return;
                             }
                             PollServerError::InvalidCertificate(error) => {
                                 // Note `CertificateOps` is responsible for sending the

@@ -1,5 +1,6 @@
 // Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 2016-present Scille SAS
 
+use libparsec_platform_storage::certificates::PerTopicLastTimestamps;
 use paste::paste;
 use std::{
     marker::PhantomData,
@@ -8,8 +9,6 @@ use std::{
 
 use libparsec_platform_async::lock::Mutex as AsyncMutex;
 use libparsec_types::prelude::*;
-
-use crate::certificates_ops::InvalidMessageError;
 
 macro_rules! impl_any_spied_event_type {
     ($([$event:ident, $event_struct: ident])*) => {
@@ -202,20 +201,15 @@ impl_events!(
     Online,
     MissedServerEvents,
     TooMuchDriftWithServerClock {
-        backend_timestamp: DateTime,
+        server_timestamp: DateTime,
+        client_timestamp: DateTime,
         ballpark_client_early_offset: Float,
         ballpark_client_late_offset: Float,
-        client_timestamp: DateTime,
     },
     ExpiredOrganization,
     RevokedUser,
     IncompatibleServer(IncompatibleServerReason),
     // Events related to ops
-    InvalidMessage {
-        index: IndexInt,
-        sender: DeviceID,
-        reason: InvalidMessageError,
-    },
     UserOpsSynced,
     UserOpsNeedSync,
     UserOpsWorkspaceCreated {
@@ -228,31 +222,29 @@ impl_events!(
     },
     // Events related to monitors
     CertificatesMonitorCrashed(Arc<anyhow::Error>),
-    MessagesMonitorCrashed(Arc<anyhow::Error>),
     InvalidCertificate(crate::certificates_ops::InvalidCertificateError),
     UserSyncMonitorCrashed(Arc<anyhow::Error>),
     WorkspaceInboundSyncMonitorCrashed(Arc<anyhow::Error>),
     WorkspaceOutboundSyncMonitorCrashed(Arc<anyhow::Error>),
     // Re-publishing of `events_listen`
-    CertificatesUpdated { index: IndexInt },
-    MessageReceived { index: IndexInt },
+    ServerConfigChanged {
+        active_users_limit: ActiveUsersLimit,
+        user_profile_outsider_allowed: bool,
+    },
+    CertificatesUpdated { last_timestamps: PerTopicLastTimestamps },
     InviteStatusChanged {
         invitation_status: InvitationStatus,
-        token: InvitationToken
+        token: InvitationToken,
     },
-    RealmMaintenanceStarted {
-        encryption_revision: IndexInt,
-        realm_id: VlobID
-    },
-    RealmMaintenanceFinished {
-        encryption_revision: IndexInt,
-        realm_id: VlobID
-    },
-    RealmVlobsUpdated {
-        checkpoint: IndexInt,
+    RealmVlobUpdated {
+        author: DeviceID,
+        blob: Option<Bytes>,
+        last_common_certificate_timestamp: DateTime,
+        last_realm_certificate_timestamp: DateTime,
         realm_id: VlobID,
-        src_id: VlobID,
-        src_version: VersionInt
+        timestamp: DateTime,
+        version: VersionInt,
+        vlob_id: VlobID,
     },
     PkiEnrollmentUpdated,
 );

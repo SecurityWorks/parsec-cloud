@@ -36,6 +36,13 @@ class RejectedBySequesterService:
     reason: str
 
 
+@dataclass(slots=True)
+class VlobReadResult:
+    vlobs: list[tuple[VlobID, DeviceID, int, DateTime, bytes]]
+    last_common_certificate_timestamp: DateTime
+    last_realm_certificate_timestamp: DateTime
+
+
 VlobCreateBadOutcome = Enum(
     "VlobCreateBadOutcome",
     (
@@ -145,7 +152,7 @@ class BaseVlobComponent:
         author: UserID,
         realm_id: VlobID,
         vlobs: list[VlobID],
-    ) -> list[tuple[VlobID, DeviceID, int, DateTime, bytes]] | VlobReadAsUserBadOutcome:
+    ) -> VlobReadResult | VlobReadAsUserBadOutcome:
         raise NotImplementedError
 
     async def poll_changes_as_user(
@@ -373,8 +380,12 @@ class BaseVlobComponent:
             vlobs=req.vlobs,
         )
         match outcome:
-            case list() as vlobs:
-                return authenticated_cmds.latest.vlob_read.RepOk(vlobs=vlobs)
+            case VlobReadResult() as result:
+                return authenticated_cmds.latest.vlob_read.RepOk(
+                    vlobs=result.vlobs,
+                    last_common_certificate_timestamp=result.last_common_certificate_timestamp,
+                    last_realm_certificate_timestamp=result.last_realm_certificate_timestamp,
+                )
             case VlobReadAsUserBadOutcome.AUTHOR_NOT_ALLOWED:
                 return authenticated_cmds.latest.vlob_read.RepAuthorNotAllowed()
             case VlobReadAsUserBadOutcome.REALM_NOT_FOUND:

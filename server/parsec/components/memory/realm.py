@@ -103,8 +103,6 @@ class MemoryRealmComponent(BaseRealmComponent):
 
         # All checks are good, now we do the actual insertion
 
-        org.last_certificate_timestamp = certif.timestamp
-
         org.realms[certif.realm_id] = MemoryRealm(
             realm_id=certif.realm_id,
             created_on=now,
@@ -222,8 +220,6 @@ class MemoryRealmComponent(BaseRealmComponent):
 
         # All checks are good, now we do the actual insertion
 
-        org.last_certificate_timestamp = certif.timestamp
-
         realm.roles.append(
             MemoryRealmUserRole(cooked=certif, realm_role_certificate=realm_role_certificate)
         )
@@ -326,8 +322,6 @@ class MemoryRealmComponent(BaseRealmComponent):
             )
 
         # All checks are good, now we do the actual insertion
-
-        org.last_certificate_timestamp = certif.timestamp
 
         realm.roles.append(
             MemoryRealmUserRole(cooked=certif, realm_role_certificate=realm_role_certificate)

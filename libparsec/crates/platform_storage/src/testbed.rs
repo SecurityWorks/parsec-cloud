@@ -4,7 +4,7 @@
 // To simplify the writing of those helpers, we use the same rule for when writing tests.
 #![allow(clippy::unwrap_used)]
 
-use std::{any::Any, path::Path, sync::Arc};
+use std::{any::Any, path::Path, sync::Arc, ops::Deref};
 
 use libparsec_platform_async::lock::Mutex as AsyncMutex;
 use libparsec_testbed::{
@@ -13,7 +13,7 @@ use libparsec_testbed::{
 use libparsec_types::prelude::*;
 
 use crate::{
-    certificates::{AddCertificateData, CertificatesStorage},
+    certificates::CertificatesStorage,
     user::UserStorage,
     workspace::{WorkspaceCacheStorage, WorkspaceDataStorage},
 };
@@ -77,9 +77,10 @@ pub(crate) async fn maybe_populate_certificate_storage(data_base_dir: &Path, dev
                     UserProfile::Outsider
                 );
 
-                let storage = CertificatesStorage::no_populate_start(data_base_dir, device)
+                let mut storage = CertificatesStorage::no_populate_start(data_base_dir, device)
                     .await
                     .unwrap();
+                let mut update = storage.for_update().await.unwrap();
 
                 let certifs = env.template.certificates().take(up_to_index as usize);
                 for (offset, certif) in certifs.enumerate() {
@@ -89,12 +90,38 @@ pub(crate) async fn maybe_populate_certificate_storage(data_base_dir: &Path, dev
                         &certif.signed
                     };
                     let encrypted = device.local_symkey.encrypt(signed);
-                    let data = AddCertificateData::from_certif(&certif.certificate, encrypted);
-                    storage
-                        .add_next_certificate(1 + offset as IndexInt, data)
-                        .await
-                        .unwrap();
+                    match &certif.certificate {
+                        AnyArcCertificate::User(certif) => update
+                            .add_certificate(certif.deref(), encrypted)
+                            .await
+                            .unwrap(),
+                        AnyArcCertificate::Device(certif) => update
+                            .add_certificate(certif.deref(), encrypted)
+                            .await
+                            .unwrap(),
+                        AnyArcCertificate::UserUpdate(certif) => update
+                            .add_certificate(certif.deref(), encrypted)
+                            .await
+                            .unwrap(),
+                        AnyArcCertificate::RevokedUser(certif) => update
+                            .add_certificate(certif.deref(), encrypted)
+                            .await
+                            .unwrap(),
+                        AnyArcCertificate::RealmRole(certif) => update
+                            .add_certificate(certif.deref(), encrypted)
+                            .await
+                            .unwrap(),
+                        AnyArcCertificate::SequesterAuthority(certif) => update
+                            .add_certificate(certif.deref(), encrypted)
+                            .await
+                            .unwrap(),
+                        AnyArcCertificate::SequesterService(certif) => update
+                            .add_certificate(certif.deref(), encrypted)
+                            .await
+                            .unwrap(),
+                    }
                 }
+                update.commit().await.unwrap();
 
                 storage.stop().await;
             }

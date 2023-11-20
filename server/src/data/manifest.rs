@@ -52,13 +52,13 @@ crate::binding_utils::gen_py_wrapper_class!(
 #[pymethods]
 impl WorkspaceEntry {
     #[new]
-    #[pyo3(signature = (id, name, key, encryption_revision, encrypted_on, legacy_role_cache_timestamp, legacy_role_cache_value))]
+    #[pyo3(signature = (id, name, key, legacy_encryption_revision, legacy_encrypted_on, legacy_role_cache_timestamp, legacy_role_cache_value))]
     fn new(
         id: VlobID,
         name: EntryName,
         key: SecretKey,
-        encryption_revision: u64,
-        encrypted_on: DateTime,
+        legacy_encryption_revision: u64,
+        legacy_encrypted_on: DateTime,
         legacy_role_cache_timestamp: DateTime,
         legacy_role_cache_value: Option<RealmRole>,
     ) -> PyResult<Self> {
@@ -66,8 +66,8 @@ impl WorkspaceEntry {
             id: id.0,
             name: name.0,
             key: key.0,
-            encryption_revision,
-            encrypted_on: encrypted_on.0,
+            legacy_encryption_revision,
+            legacy_encrypted_on: legacy_encrypted_on.0,
             legacy_role_cache_timestamp: legacy_role_cache_timestamp.0,
             legacy_role_cache_value: legacy_role_cache_value.map(|x| x.0),
         }))
@@ -80,8 +80,8 @@ impl WorkspaceEntry {
             [id: VlobID, "id"],
             [name: EntryName, "name"],
             [key: SecretKey, "key"],
-            [encryption_revision: IndexInt, "encryption_revision"],
-            [encrypted_on: DateTime, "encrypted_on"],
+            [legacy_encryption_revision: IndexInt, "legacy_encryption_revision"],
+            [legacy_encrypted_on: DateTime, "legacy_encrypted_on"],
             [
                 legacy_role_cache_timestamp: DateTime,
                 "legacy_role_cache_timestamp"
@@ -103,11 +103,11 @@ impl WorkspaceEntry {
         if let Some(v) = key {
             r.key = v.0;
         }
-        if let Some(v) = encryption_revision {
-            r.encryption_revision = v;
+        if let Some(v) = legacy_encryption_revision {
+            r.legacy_encryption_revision = v;
         }
-        if let Some(v) = encrypted_on {
-            r.encrypted_on = v.0;
+        if let Some(v) = legacy_encrypted_on {
+            r.legacy_encrypted_on = v.0;
         }
         if let Some(v) = legacy_role_cache_timestamp {
             r.legacy_role_cache_timestamp = v.0;
@@ -121,10 +121,9 @@ impl WorkspaceEntry {
 
     #[classmethod]
     #[pyo3(name = "new")]
-    fn class_new(_cls: &PyType, name: &EntryName, timestamp: DateTime) -> PyResult<Self> {
+    fn class_new(_cls: &PyType, name: &EntryName) -> PyResult<Self> {
         Ok(Self(libparsec_types::WorkspaceEntry::generate(
             name.0.to_owned(),
-            timestamp.0,
         )))
     }
 
@@ -144,13 +143,13 @@ impl WorkspaceEntry {
     }
 
     #[getter]
-    fn encryption_revision(&self) -> PyResult<IndexInt> {
-        Ok(self.0.encryption_revision)
+    fn legacy_encryption_revision(&self) -> PyResult<IndexInt> {
+        Ok(self.0.legacy_encryption_revision)
     }
 
     #[getter]
-    fn encrypted_on(&self) -> PyResult<DateTime> {
-        Ok(DateTime(self.0.encrypted_on))
+    fn legacy_encrypted_on(&self) -> PyResult<DateTime> {
+        Ok(DateTime(self.0.legacy_encrypted_on))
     }
 
     #[getter]
@@ -828,7 +827,7 @@ crate::binding_utils::gen_py_wrapper_class!(
 impl UserManifest {
     #[allow(clippy::too_many_arguments)]
     #[new]
-    #[pyo3(signature = (author, timestamp, id, version, created, updated, last_processed_message, workspaces))]
+    #[pyo3(signature = (author, timestamp, id, version, created, updated, legacy_last_processed_message, workspaces))]
     fn new(
         author: DeviceID,
         timestamp: DateTime,
@@ -836,7 +835,7 @@ impl UserManifest {
         version: u32,
         created: DateTime,
         updated: DateTime,
-        last_processed_message: u64,
+        legacy_last_processed_message: u64,
         workspaces: Vec<WorkspaceEntry>,
     ) -> PyResult<Self> {
         Ok(Self(libparsec_types::UserManifest {
@@ -846,7 +845,7 @@ impl UserManifest {
             version,
             created: created.0,
             updated: updated.0,
-            last_processed_message,
+            legacy_last_processed_message,
             workspaces: workspaces.into_iter().map(|w| w.0).collect(),
         }))
     }
@@ -906,7 +905,7 @@ impl UserManifest {
             [version: u32, "version"],
             [created: DateTime, "created"],
             [updated: DateTime, "updated"],
-            [last_processed_message: u64, "last_processed_message"],
+            [legacy_last_processed_message: u64, "legacy_last_processed_message"],
             [workspaces: Vec<WorkspaceEntry>, "workspaces"],
         );
 
@@ -930,8 +929,8 @@ impl UserManifest {
         if let Some(v) = updated {
             r.updated = v.0;
         }
-        if let Some(v) = last_processed_message {
-            r.last_processed_message = v;
+        if let Some(v) = legacy_last_processed_message {
+            r.legacy_last_processed_message = v;
         }
         if let Some(v) = workspaces {
             r.workspaces = v.into_iter().map(|w| w.0).collect();
@@ -979,8 +978,8 @@ impl UserManifest {
     }
 
     #[getter]
-    fn last_processed_message(&self) -> PyResult<u64> {
-        Ok(self.0.last_processed_message)
+    fn legacy_last_processed_message(&self) -> PyResult<u64> {
+        Ok(self.0.legacy_last_processed_message)
     }
 
     #[getter]

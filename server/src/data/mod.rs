@@ -2,11 +2,9 @@
 
 mod certif;
 mod manifest;
-mod user;
 
 pub(crate) use certif::*;
 pub(crate) use manifest::*;
-pub(crate) use user::*;
 
 use pyo3::{types::PyModule, wrap_pyfunction, PyResult};
 
@@ -30,9 +28,6 @@ pub(crate) fn add_mod(m: &PyModule) -> PyResult<()> {
     m.add_class::<UserManifest>()?;
     m.add_function(wrap_pyfunction!(child_manifest_decrypt_verify_and_load, m)?)?;
     m.add_function(wrap_pyfunction!(child_manifest_verify_and_load, m)?)?;
-
-    // User
-    m.add_class::<UsersPerProfileDetailItem>()?;
 
     Ok(())
 }

@@ -178,8 +178,6 @@ class MemoryOrganizationComponent(BaseOrganizationComponent):
             # All checks are good, now we do the actual insertion
 
             org.bootstrapped_on = now
-            # Remember we have checked all certificates have the same timestamp
-            org.last_certificate_timestamp = u_certif.timestamp
             assert org.root_verify_key is None
             org.root_verify_key = root_verify_key
 

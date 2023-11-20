@@ -373,7 +373,7 @@ async fn get_last_certificate_index(env: &TestbedEnv) {
     let alice_certif = AnyArcCertificate::User(alice_certif);
 
     // Check that certificates are now present
-    let index = write.get_last_certificate_index().await.unwrap();
+    let index = write.get_last_certificate_timestamp().await.unwrap();
 
     p_assert_eq!(index, 0);
 
@@ -387,7 +387,7 @@ async fn get_last_certificate_index(env: &TestbedEnv) {
         .await
         .unwrap();
 
-    let index = write.get_last_certificate_index().await.unwrap();
+    let index = write.get_last_certificate_timestamp().await.unwrap();
 
     p_assert_eq!(index, 2);
 

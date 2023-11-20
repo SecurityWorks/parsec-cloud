@@ -73,6 +73,8 @@ class APIEventVlob(APIEvent):
         timestamp: DateTime,
         version: int,
         blob: bytes | None,
+        last_common_certificate_timestamp: DateTime,
+        last_realm_certificate_timestamp: DateTime,
     ) -> None: ...
     @property
     def realm_id(self) -> VlobID: ...
@@ -86,6 +88,10 @@ class APIEventVlob(APIEvent):
     def version(self) -> int: ...
     @property
     def blob(self) -> bytes | None: ...
+    @property
+    def last_common_certificate_timestamp(self) -> DateTime: ...
+    @property
+    def last_realm_certificate_timestamp(self) -> DateTime: ...
 
 class Req:
     def __init__(

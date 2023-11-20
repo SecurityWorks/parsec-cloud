@@ -15,7 +15,7 @@ pub(super) async fn create_workspace(
     let (updater, mut user_manifest) = ops.storage.for_update().await;
 
     let timestamp = ops.device.time_provider.now();
-    let workspace_entry = WorkspaceEntry::generate(name.clone(), timestamp);
+    let workspace_entry = WorkspaceEntry::generate(name.clone());
     let workspace_id = workspace_entry.id;
 
     // `Arc::make_mut` clones user manifest before we modify it

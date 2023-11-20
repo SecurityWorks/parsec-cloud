@@ -212,3 +212,51 @@ pub(super) async fn initialize_model_if_needed(db: &LocalDatabase) -> DatabaseRe
     })
     .await
 }
+
+pub(super) async fn sqlx_initialize_model_if_needed(conn: &mut sqlx::SqliteConnection) -> anyhow::Result<()> {
+    use sqlx::Connection;
+    let mut transaction = conn.begin().await?;
+
+    // 1) create the tables
+
+    sqlx::query(std::include_str!("sql/create-vlobs-table.sql"))
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query(std::include_str!("sql/create-realm-checkpoint-table.sql"))
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query(std::include_str!(
+        "sql/create-prevent-sync-pattern-table.sql"
+    ))
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query(std::include_str!("sql/create-chunks-table.sql"))
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query(std::include_str!("sql/create-remanence-table.sql"))
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query(std::include_str!("sql/create-certificates-table.sql"))
+        .execute(&mut *transaction)
+        .await?;
+
+    // 2) Populate the tables
+
+    // Set the default "prevent sync" pattern if it doesn't exist
+    sqlx::query(
+        "INSERT INTO prevent_sync_pattern(_id, pattern, fully_applied) \
+        VALUES( \
+            0, \
+            ?1, \
+            FALSE \
+        ) \
+        ON CONFLICT DO NOTHING \
+        ")
+        .bind(PREVENT_SYNC_PATTERN_EMPTY_PATTERN)
+        .execute(&mut *transaction)
+        .await?;
+
+    transaction.commit().await?;
+
+    Ok(())
+}

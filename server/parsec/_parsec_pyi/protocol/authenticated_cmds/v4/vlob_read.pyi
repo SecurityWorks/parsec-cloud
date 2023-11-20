@@ -27,9 +27,18 @@ class RepUnknownStatus(Rep):
     def reason(self) -> str | None: ...
 
 class RepOk(Rep):
-    def __init__(self, vlobs: list[tuple[VlobID, DeviceID, int, DateTime, bytes]]) -> None: ...
+    def __init__(
+        self,
+        vlobs: list[tuple[VlobID, DeviceID, int, DateTime, bytes]],
+        last_common_certificate_timestamp: DateTime,
+        last_realm_certificate_timestamp: DateTime,
+    ) -> None: ...
     @property
     def vlobs(self) -> list[tuple[VlobID, DeviceID, int, DateTime, bytes]]: ...
+    @property
+    def last_common_certificate_timestamp(self) -> DateTime: ...
+    @property
+    def last_realm_certificate_timestamp(self) -> DateTime: ...
 
 class RepRealmNotFound(Rep):
     def __init__(

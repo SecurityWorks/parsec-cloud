@@ -20,9 +20,9 @@ pub(crate) fn generate() -> Arc<TestbedTemplate> {
 
     // 2) Create workspace's realm
 
-    let (wksp1_id, wksp1_key, realm_timestamp) = builder
+    let (wksp1_id, wksp1_key) = builder
         .new_realm("alice")
-        .map(|e| (e.realm_id, e.realm_key.clone(), e.timestamp));
+        .map(|e| (e.realm_id, e.realm_key.clone()));
 
     builder.store_stuff("wksp1_id", &wksp1_id);
     builder.store_stuff("wksp1_key", &wksp1_key);
@@ -104,8 +104,6 @@ pub(crate) fn generate() -> Arc<TestbedTemplate> {
                     wksp1_id,
                     "wksp1".parse().unwrap(),
                     wksp1_key,
-                    1,
-                    realm_timestamp,
                 ))
         });
 

@@ -273,8 +273,8 @@ impl CrcHash for WorkspaceEntry {
             id,
             name,
             key,
-            encryption_revision,
-            encrypted_on,
+            legacy_encryption_revision,
+            legacy_encrypted_on,
             legacy_role_cache_timestamp,
             legacy_role_cache_value,
         } = self;
@@ -282,8 +282,8 @@ impl CrcHash for WorkspaceEntry {
         id.crc_hash(hasher);
         name.crc_hash(hasher);
         key.crc_hash(hasher);
-        encryption_revision.crc_hash(hasher);
-        encrypted_on.crc_hash(hasher);
+        legacy_encryption_revision.crc_hash(hasher);
+        legacy_encrypted_on.crc_hash(hasher);
         legacy_role_cache_timestamp.crc_hash(hasher);
         legacy_role_cache_value.crc_hash(hasher);
     }
@@ -300,7 +300,7 @@ impl CrcHash for UserManifest {
             version,
             created,
             updated,
-            last_processed_message,
+            legacy_last_processed_message,
             workspaces,
         } = self;
 
@@ -310,7 +310,7 @@ impl CrcHash for UserManifest {
         version.crc_hash(hasher);
         created.crc_hash(hasher);
         updated.crc_hash(hasher);
-        last_processed_message.crc_hash(hasher);
+        legacy_last_processed_message.crc_hash(hasher);
         workspaces.crc_hash(hasher);
     }
 }
@@ -323,7 +323,7 @@ impl CrcHash for LocalUserManifest {
             base,
             need_sync,
             updated,
-            last_processed_message,
+            legacy_last_processed_message,
             workspaces,
             speculative,
         } = self;
@@ -331,7 +331,7 @@ impl CrcHash for LocalUserManifest {
         base.crc_hash(hasher);
         need_sync.crc_hash(hasher);
         updated.crc_hash(hasher);
-        last_processed_message.crc_hash(hasher);
+        legacy_last_processed_message.crc_hash(hasher);
         workspaces.crc_hash(hasher);
         speculative.crc_hash(hasher);
     }

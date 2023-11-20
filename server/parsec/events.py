@@ -184,6 +184,8 @@ class EventVlob(BaseModel, ClientBroadcastableEvent):
     vlob_id: VlobIDField
     version: int
     blob: bytes | None
+    last_common_certificate_timestamp: DateTime
+    last_realm_certificate_timestamp: DateTime
 
     @override
     def is_event_for_client(self, client: RegisteredClient) -> bool:
@@ -199,6 +201,8 @@ class EventVlob(BaseModel, ClientBroadcastableEvent):
                 timestamp=self.timestamp,
                 version=self.version,
                 blob=self.blob,
+                last_common_certificate_timestamp=self.last_common_certificate_timestamp,
+                last_realm_certificate_timestamp=self.last_realm_certificate_timestamp,
             ),
             self.event_id,
         )

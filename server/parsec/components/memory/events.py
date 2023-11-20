@@ -7,11 +7,14 @@ from typing import AsyncIterator, override
 
 import anyio
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+from structlog import get_logger
 
 from parsec._parsec import OrganizationID, UserID, UserProfile, VlobID
 from parsec.components.events import BaseEventsComponent, EventBus, SseAPiEventsListenBadOutcome
 from parsec.components.memory.datamodel import MemoryDatamodel
 from parsec.events import Event, EventOrganizationConfig
+
+logger = get_logger()
 
 
 class MemoryEventBus(EventBus):
@@ -39,6 +42,7 @@ async def event_bus_factory() -> AsyncIterator[MemoryEventBus]:
     async def _pump_events():
         async for event in receive_events_channel:
             await asyncio.sleep(0)  # Sleep to force some asynchronousness
+            logger.info("Broadcasting", event_=event)
             event_bus._dispatch_incoming_event(event)
 
     async with anyio.create_task_group() as tg:

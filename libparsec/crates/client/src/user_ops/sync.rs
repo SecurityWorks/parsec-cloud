@@ -106,8 +106,6 @@ async fn upload_manifest(
             use authenticated_cmds::latest::vlob_create::{Rep, Req};
             let req = Req {
                 realm_id: ops.device.user_realm_id,
-                // Always 1 given user manifest realm is never reencrypted
-                encryption_revision: 1,
                 vlob_id: ops.device.user_realm_id,
                 timestamp,
                 blob: ciphered,
@@ -143,9 +141,9 @@ async fn upload_manifest(
                         })?;
                     continue;
                 }
+                // TODO: what do to here ?
                 Rep::RejectedBySequesterService {
                     service_id: _service_id,
-                    service_label: _service_label,
                     ..
                 } => todo!(),
                 Rep::NotAllowed => todo!(),
@@ -159,8 +157,6 @@ async fn upload_manifest(
         } else {
             use authenticated_cmds::latest::vlob_update::{Rep, Req};
             let req = Req {
-                // Always 1 given user manifest realm is never reencrypted
-                encryption_revision: 1,
                 vlob_id: ops.device.user_realm_id,
                 version: to_sync_um.version,
                 timestamp,
@@ -200,7 +196,6 @@ async fn upload_manifest(
                 // TODO: what do to here ?
                 Rep::RejectedBySequesterService {
                     service_id: _service_id,
-                    service_label: _service_label,
                     ..
                 } => todo!(),
                 // TODO: error handling !
@@ -443,17 +438,17 @@ async fn fetch_remote_user_manifest(
     use authenticated_cmds::latest::vlob_read::{Rep, Req};
 
     let req = Req {
-        // `encryption_revision` is always 1 given we never re-encrypt the user manifest's realm
-        encryption_revision: 1,
-        timestamp: None,
-        version,
-        vlob_id: VlobID::from(ops.device.user_realm_id.as_ref().to_owned()),
+        realm_id: ops.realm_id(),
+        vlobs: [VlobID::from(ops.device.user_realm_id.as_ref().to_owned())].into()
     };
 
     let rep = ops.cmds.send(req).await?;
 
     let outcome = match rep {
-        Rep::Ok { certificate_index, author: expected_author, version: version_according_to_server, timestamp: expected_timestamp, blob } => {
+        Rep::Ok {vlobs} => {
+            let (vlob_id, author, version, timestamp, blob) = vlobs.first().ok_or_else(|| {
+                anyhow::anyhow!("Unexpected server response (no vlob data): {:?}", rep).into()
+            })?;
             let expected_version = match version {
                 Some(version) => version,
                 None => version_according_to_server,

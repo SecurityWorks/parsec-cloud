@@ -1,16 +1,17 @@
 // Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 2016-present Scille SAS
 
-use std::sync::Arc;
+use std::{sync::Arc, collections::HashMap};
 
+use libparsec_platform_storage::certificates::PerTopicLastTimestamps;
 use libparsec_types::prelude::*;
 
 use super::{
-    store::{CertificatesStoreWriteGuard, GetTimestampBoundsError, UpTo},
+    store::{
+    CertificatesStoreWriteGuard,
+    UpTo},
     CertificatesOps, GetCertificateError,
 };
-use crate::{
-    certificates_ops::store::CertificatesStoreReadExt, event_bus::EventInvalidCertificate,
-};
+use crate::event_bus::EventInvalidCertificate;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum InvalidCertificateError {
@@ -40,24 +41,19 @@ pub enum InvalidCertificateError {
     },
     #[error("Certificate `{hint}` breaks consistency: there is already a certificate with similar content")]
     ContentAlreadyExists { hint: String },
-    #[error("Certificate `{hint}` breaks consistency: there is already a certificate with index #{certificate_index}")]
-    IndexAlreadyExists {
-        hint: String,
-        certificate_index: IndexInt,
-    },
-    #[error("Certificate `{hint}` breaks consistency: index #{expected_index} was expected but instead got #{certificate_index}")]
-    InvalidIndex {
-        hint: String,
-        certificate_index: IndexInt,
-        expected_index: IndexInt,
-    },
     #[error("Certificate `{hint}` breaks consistency: it is older than the previous certificate we know about ({last_certificate_timestamp})")]
     InvalidTimestamp {
         hint: String,
         last_certificate_timestamp: DateTime,
     },
+    #[error("Certificate `{hint}` breaks consistency: it is signed by the root key, which is only allowed for the certificates created during the organization bootstrap")]
+    RootSignatureOutOfBootstrap {hint: String },
+    #[error("Certificate `{hint}` breaks consistency: it is signed by the root key but with a different timestamp than previous certificates ({last_root_signature_timestamp})")]
+    RootSignatureTimestampMismatch {hint: String, last_root_signature_timestamp: DateTime },
     #[error("Certificate `{hint}` breaks consistency: a sequestered service can only be added to a sequestered organization")]
     NotASequesteredOrganization { hint: String },
+    #[error("Certificate `{hint}` breaks consistency: as sequester authority it must be provided first, but others certificates already exist")]
+    SequesterAuthorityMustBeFirst { hint: String },
     #[error("Certificate `{hint}` breaks consistency: it refers to a user than doesn't exist")]
     NonExistingRelatedUser { hint: String },
     #[error("Certificate `{hint}` breaks consistency: it declares to be older than the user it refers to (created on {user_created_on})")]
@@ -72,6 +68,10 @@ pub enum InvalidCertificateError {
     },
     #[error("Certificate `{hint}` breaks consistency: related user cannot change profile to Outsider given it still has Owner/Manager role in some realms")]
     CannotDowngradeUserToOutsider { hint: String },
+    #[error("Certificate `{hint}` breaks consistency: as first device certificate for it user it must have the same author that the user certificate ({user_author:?})")]
+    UserFirstDeviceAuthorMismatch { hint: String, user_author: CertificateSignerOwned },
+    #[error("Certificate `{hint}` breaks consistency: as first device certificate for it user it must have the same timestamp that the user certificate ({user_timestamp})")]
+    UserFirstDeviceTimestampMismatch { hint: String, user_timestamp: DateTime },
     #[error("Certificate `{hint}` breaks consistency: as first certificate for the realm, author must give the role to itself")]
     RealmFirstRoleMustBeSelfSigned { hint: String },
     #[error("Certificate `{hint}` breaks consistency: author cannot change it own role")]
@@ -98,6 +98,8 @@ pub enum InvalidCertificateError {
 pub enum AddCertificateError {
     #[error(transparent)]
     InvalidCertificate(#[from] InvalidCertificateError),
+    #[error("Certificate storage is stopped")]
+    StorageStopped,
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -110,113 +112,213 @@ pub enum MaybeRedactedSwitch {
 
 pub(super) async fn add_certificates_batch(
     ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    last_index: IndexInt,
-    certificates: impl Iterator<Item = Bytes>,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    common_certificates: &[Bytes],
+    sequester_certificates: &[Bytes],
+    _shamir_certificates: &[Bytes],
+    realm_certificates: &HashMap<VlobID, Vec<Bytes>>,
 ) -> Result<MaybeRedactedSwitch, AddCertificateError> {
+    let send_event_on_invalid_certificate = |err: AddCertificateError| {
+        if let AddCertificateError::InvalidCertificate(what) = err {
+            let event = EventInvalidCertificate(what);
+            ops.event_bus.send(&event);
+            AddCertificateError::InvalidCertificate(event.0)
+        } else {
+            err
+        }
+    };
+
+    let storage_initially_empty = {
+        let PerTopicLastTimestamps { common, sequester, realm, shamir } =  store.get_last_timestamps().await?;
+        common.is_none() && sequester.is_none() && realm.is_empty() && shamir.is_none()
+    };
     let initial_self_profile = store.get_current_self_profile().await?;
 
-    // TODO: use batch to insert the certificates in SQLite saves a huge amount of time
-    // However this is tricky given a given certificate depends on the previous ones
-    // for its validation, but now they could be either in SQLite or in the to-be-inserted
-    // batch !
-    // A solution to avoid this would be to have `CertificateStore::for_write` opens a
-    // SQLite transaction, this way inserting here would be cheap.
+    // If a certificate is invalid we exit without any further validation: the
+    // write operation is going to be rolled back.
 
-    // TODO
-    // // Storing the certificates in batch (i.e. in a single SQL transaction) avoids
-    // // much of the ACID overhead
-    // const STORAGE_BATCH_SIZE: usize = 999;
-    // let mut to_insert_in_db_first_index = last_index + 1;
-    // let mut to_insert_in_db = {
-    //     let capacity = std::cmp::min(STORAGE_BATCH_SIZE, certificates.size_hint().0);
-    //     Vec::with_capacity(capacity)
-    // };
+    // First add the sequester certificates:
+    // - Sequester authority is expected to be the very first certificate added.
+    // - Sequester certificate topic doesn't depend on any other topic.
 
-    for (signed, certificate_index) in certificates.zip(last_index + 1..) {
-        // Start by validating the certificate and, if something goes wrong, send
-        // the invalid certificate event
+    for signed in sequester_certificates {
+        let cooked = validate_sequester_certificate(
+            ops,
+            store,
+            signed.to_owned()
+        )
+        .await
+        .map_err(send_event_on_invalid_certificate)?;
 
-        let any_cooked = validate_certificate(ops, store, certificate_index, signed.clone())
-            .await
-            // If a certificate is invalid we exit without any further validation.
-            // Note for simplicity we also skip sending to the storage the current
-            // batch of valid certificates (this means some operations that could have
-            // been processed will end up with an "invalid certificate" error instead,
-            // this is no big deal)
-            .map_err(|err| {
-                if let AddCertificateError::InvalidCertificate(what) = err {
-                    let event = EventInvalidCertificate(what);
-                    ops.event_bus.send(&event);
-                    AddCertificateError::InvalidCertificate(event.0)
-                } else {
-                    err
-                }
-            })?;
-
-        // At this point, we are guaranteed the certificate is valid, so we can
-        // insert it in database...
-
-        // ...but there is one more weird check before that !
-        // If the certificate changes *our profile* from/to Outsider, then our certificate
-        // storage must be cleared given we no longer use the right flavour: Outsider
-        // must use redacted certificates while other profile use non-redacted ones.
-        if let AnyArcCertificate::UserUpdate(update) = &any_cooked {
-            if update.user_id == *ops.device.user_id() {
-                match (last_index, initial_self_profile, update.new_profile) {
-                    // The storage was empty before this batch, so there is nothing outdated
-                    // Note at this point `last_index` has been indirectly checked by the
-                    // first call to `validated_certificate` so it value can be trusted.
-                    (0, _, _) => (),
-                    // No need to switch.
-                    (_, UserProfile::Outsider, UserProfile::Outsider) => (),
-                    // Switching from/to Outsider !
-                    (_, UserProfile::Outsider, _) | (_, _, UserProfile::Outsider) => {
-                        // So we clear the storage and don't try to go any further given
-                        // the index is no longer the right one (we must instead re-poll
-                        // the server to get certificates from index 0)
-                        store.forget_all_certificates().await?;
-                        return Ok(MaybeRedactedSwitch::Switched);
-                    }
-                    // Switching profile without Outsider involved
-                    _ => (),
-                }
-            }
-        }
-
-        // Actually insert the certificate !
-        store
-            .add_next_certificate(certificate_index, &any_cooked, &signed)
-            .await?;
-
-        // TODO
-        // // Add to the batch, and actually do the insertion if the batch is full
-        // to_insert_in_db.push((any_cooked, signed));
-        // if to_insert_in_db.len() >= STORAGE_BATCH_SIZE {
-        //     store.add_certificates_batch(to_insert_in_db_first_index, &to_insert_in_db).await?;
-        //     to_insert_in_db_first_index += to_insert_in_db.len() as IndexInt;
-        //     to_insert_in_db.clear();
-        // }
+        store.add_next_sequester_certificate(cooked, signed).await?;
     }
 
-    // TODO
-    // // Special case for the last batch
-    // store.add_certificates_batch(to_insert_in_db_first_index, &to_insert_in_db).await?;
+    // Then add the common certificates...
+
+    for signed in common_certificates {
+        let cooked = validate_common_certificate(
+            ops,
+            store,
+            signed.to_owned()
+        )
+        .await
+        .map_err(send_event_on_invalid_certificate)?;
+
+        store.add_next_common_certificate(cooked, signed).await?;
+    }
+
+    // ...now the remaining topics can be added (given they may depend on common)
+
+    for (realm_id, certificates) in realm_certificates.iter() {
+        for signed in certificates {
+            let cooked = validate_realm_certificate(
+                ops,
+                store,
+                *realm_id,
+                signed.to_owned(),
+            )
+            .await
+            .map_err(send_event_on_invalid_certificate)?;
+
+            store.add_next_realm_x_certificate(cooked, signed).await?;
+        }
+    }
+
+    // TODO: Handle Shamir topic here
+
+    // Finally detect if we have switched to/from redacted certificates
+
+    // If the certificate changes *our profile* from/to Outsider, then our certificate
+    // storage must be cleared given we no longer use the right flavour: Outsider
+    // must use redacted certificates while other profile use non-redacted ones.
+    if !storage_initially_empty {
+        let new_self_profile = store.get_current_self_profile().await?;
+        match (initial_self_profile, new_self_profile) {
+                // No need to switch.
+                (UserProfile::Outsider, UserProfile::Outsider) => (),
+                // Switching from/to Outsider !
+                (UserProfile::Outsider, _) | (_, UserProfile::Outsider) => {
+                    // Clear the storage and notify the caller (which should in
+                    // turn re-poll the server, this time asking for all
+                    // certificates instead of just a subset)
+                    store.forget_all_certificates().await?;
+                    return Ok(MaybeRedactedSwitch::Switched);
+                }
+                // Switching profile without Outsider involved
+                _ => (),
+        }
+    }
 
     Ok(MaybeRedactedSwitch::NoSwitch)
 }
 
+macro_rules! verify_certificate_signature {
+
+    // Entry points
+
+    (Device, $unsecure:ident, $ops:expr, $store:expr) => {
+        verify_certificate_signature!(
+            @internal,
+            Device,
+            $unsecure,
+            $unsecure.author().to_owned(),
+            $ops,
+            $store
+        )
+        .map(|(certif, serialized)| (Arc::new(certif), serialized))
+        .map_err(|what| {
+            AddCertificateError::InvalidCertificate(what)
+        })
+    };
+
+    (DeviceOrRoot, $unsecure:ident, $ops:expr, $store:expr) => {
+        verify_certificate_signature!(
+            @internal,
+            DeviceOrRoot,
+            $unsecure,
+            $ops,
+            $store
+        )
+        .map(|(certif, serialized)| (Arc::new(certif), serialized))
+        .map_err(|what| {
+            AddCertificateError::InvalidCertificate(what)
+        })
+    };
+
+    // Internal macro implementation stuff
+
+    (@internal, Device, $unsecure:ident, $author:expr, $ops:expr, $store:expr) => {
+        match $store.get_device_verify_key(UpTo::Timestamp($unsecure.timestamp().to_owned()), $author).await {
+            Ok(author_verify_key) => $unsecure
+                .verify_signature(&author_verify_key)
+                .map_err(|(unsecure, error)| {
+                    let hint = unsecure.hint();
+                    InvalidCertificateError::Corrupted { hint, error }
+                }),
+            Err(GetCertificateError::ExistButTooRecent {
+                certificate_timestamp,
+                ..
+            }) => {
+                // The author didn't exist at the time the certificate was made...
+                let hint = $unsecure.hint();
+                let what = InvalidCertificateError::OlderThanAuthor {
+                    hint,
+                    author_created_on: certificate_timestamp,
+                };
+                Err(what)
+            }
+            Err(GetCertificateError::NonExisting) => {
+                // Unknown author... we don't try here to poll the server
+                // for new certificates: this is because certificate are
+                // supposed to be added in a strictly causal order, hence
+                // we are supposed to have already added all the certificates
+                // needed to validate this one. And if that's not the case
+                // it's suspicious and error should be raised !
+                let what = InvalidCertificateError::NonExistingAuthor {
+                    hint: $unsecure.hint(),
+                };
+                Err(what)
+            }
+            Err(err @ GetCertificateError::Internal(_)) => {
+                return Err(anyhow::anyhow!(err).into());
+            }
+        }
+    };
+
+    (@internal, DeviceOrRoot, $unsecure:ident, $ops:expr, $store:expr) => {
+        match $unsecure.author() {
+            CertificateSignerOwned::Root => $unsecure
+                .verify_signature($ops.device.root_verify_key())
+                .map_err(|(unsecure, error)| {
+                    let hint = unsecure.hint();
+                    InvalidCertificateError::Corrupted { hint, error }
+                }),
+
+            CertificateSignerOwned::User(author) => {
+                verify_certificate_signature!(
+                    @internal,
+                    Device,
+                    $unsecure,
+                    author.to_owned(),
+                    $ops,
+                    $store
+                )
+            }
+        }
+    };
+
+}
+
 /// Validate the given certificate by both checking it content (format, signature, etc.)
 /// and it global consistency with the others certificates.
-async fn validate_certificate(
+async fn validate_common_certificate(
     ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
     signed: Bytes,
-) -> Result<AnyArcCertificate, AddCertificateError> {
-    // 1) Deserialize the certificate first, as this doesn't need a lock on the storage
+) -> Result<CommonTopicArcCertificate, AddCertificateError> {
+    // 1) Deserialize the certificate
 
-    let unsecure = match AnyCertificate::unsecure_load(signed) {
+    let unsecure = match CommonTopicCertificate::unsecure_load(signed) {
         Ok(unsecure) => unsecure,
         Err(error) => {
             // No information can be extracted from the binary data...
@@ -226,289 +328,194 @@ async fn validate_certificate(
         }
     };
 
-    // 2) Run consistency checks on index & timestamp:
-    // - Certificates are added in deterministic order following their index,
-    //   hence only certificate with index <last known index + 1> can be added.
-    // - A certificate must have a timestamp greater than the previous one (can
-    //   be equal e.g. when creating a new user or during organization bootstrap).
-
-    // Special case for the first index given there is no previous one to retrieve !
-    let current_index = if index == 1 {
-        // Ensure index 1 doesn't already exists
-        match store.get_timestamp_bounds(1).await {
-            Err(GetTimestampBoundsError::NonExisting) => {
-                // As expected !
-                0
-            }
-            Ok(_) => {
-                // We already know index 1 !
-                let hint = unsecure.hint();
-                let what = InvalidCertificateError::IndexAlreadyExists {
-                    hint,
-                    certificate_index: index,
-                };
-                return Err(AddCertificateError::InvalidCertificate(what));
-            }
-            Err(err @ GetTimestampBoundsError::Internal(_)) => {
-                return Err(anyhow::anyhow!(err).into())
-            }
-        }
-    } else {
-        let guessed_current_index = index - 1;
-        match store.get_timestamp_bounds(guessed_current_index).await {
-            Ok((_, Some(_))) => {
-                // We already know some certificates with an higher index, hence this certificate
-                // cannot be added without breaking causality !
-                let hint = unsecure.hint();
-                let what = InvalidCertificateError::IndexAlreadyExists {
-                    hint,
-                    certificate_index: index,
-                };
-                return Err(AddCertificateError::InvalidCertificate(what));
-            }
-            Err(GetTimestampBoundsError::NonExisting) => {
-                // We have a hole between the our last index and the one of the certificate to add.
-                let hint = unsecure.hint();
-                let expected_index = store.get_last_certificate_index().await? + 1;
-                let what = InvalidCertificateError::InvalidIndex {
-                    hint,
-                    certificate_index: index,
-                    expected_index,
-                };
-                return Err(AddCertificateError::InvalidCertificate(what));
-            }
-            Ok((lower, None)) => {
-                // The index is the one we expected, now ensure it timestamp is compatible
-                // with the previous certificate. Note we allow both certificates to have
-                // the same timestamp, this is the case when creating a new user given
-                // the device certificate must also be created at the same time.
-                if *unsecure.timestamp() < lower {
-                    let hint = unsecure.hint();
-                    let what = InvalidCertificateError::InvalidTimestamp {
-                        hint,
-                        last_certificate_timestamp: lower,
-                    };
-                    return Err(AddCertificateError::InvalidCertificate(what));
-                } else {
-                    guessed_current_index
-                }
-            }
-            Err(err @ GetTimestampBoundsError::Internal(_)) => {
-                return Err(anyhow::anyhow!(err).into())
-            }
-        }
-    };
-
-    // 3) Verify the certificate signature
+    // 2) Verify the certificate signature
     // By doing so we also verify author's device existence, but we don't go
-    // any further, hence additional checks on author must be done at step 4 !
-
-    macro_rules! verify_certificate_signature {
-
-        // Entry points
-
-        (Device, $unsecure:ident) => {
-            verify_certificate_signature!(
-                @internal,
-                Device,
-                $unsecure,
-                $unsecure.author().to_owned()
-            )
-            .map(|(certif, serialized)| (Arc::new(certif), serialized))
-            .map_err(|what| {
-                AddCertificateError::InvalidCertificate(what)
-            })
-        };
-
-        (DeviceOrRoot, $unsecure:ident) => {
-            verify_certificate_signature!(
-                @internal,
-                DeviceOrRoot,
-                $unsecure
-            )
-            .map(|(certif, serialized)| (Arc::new(certif), serialized))
-            .map_err(|what| {
-                AddCertificateError::InvalidCertificate(what)
-            })
-        };
-
-        // Internal macro implementation stuff
-
-        (@internal, Device, $unsecure:ident, $author:expr) => {
-            match store.get_device_certificate(UpTo::Index(index), $author).await {
-                Ok(author_certif) => $unsecure
-                    .verify_signature(&author_certif.verify_key)
-                    .map_err(|(unsecure, error)| {
-                        let hint = unsecure.hint();
-                        InvalidCertificateError::Corrupted { hint, error }
-                    }),
-                Err(GetCertificateError::ExistButTooRecent {
-                    certificate_timestamp,
-                    ..
-                }) => {
-                    // The author didn't exist at the time the certificate was made...
-                    let hint = $unsecure.hint();
-                    let what = InvalidCertificateError::OlderThanAuthor {
-                        hint,
-                        author_created_on: certificate_timestamp,
-                    };
-                    Err(what)
-                }
-                Err(GetCertificateError::NonExisting) => {
-                    // Unknown author... we don't try here to poll the server
-                    // for new certificates: this is because certificate are
-                    // supposed to be added in a strictly causal order, hence
-                    // we are supposed to have already added all the certificates
-                    // needed to validate this one. And if that's not the case
-                    // it's suspicious and error should be raised !
-                    let what = InvalidCertificateError::NonExistingAuthor {
-                        hint: $unsecure.hint(),
-                    };
-                    Err(what)
-                }
-                Err(err @ GetCertificateError::Internal(_)) => {
-                    return Err(anyhow::anyhow!(err).into());
-                }
-            }
-        };
-
-        (@internal, DeviceOrRoot, $unsecure:ident) => {
-            match $unsecure.author() {
-                CertificateSignerOwned::Root => $unsecure
-                    .verify_signature(ops.device.root_verify_key())
-                    .map_err(|(unsecure, error)| {
-                        let hint = unsecure.hint();
-                        InvalidCertificateError::Corrupted { hint, error }
-                    }),
-
-                CertificateSignerOwned::User(author) => {
-                    verify_certificate_signature!(
-                        @internal,
-                        Device,
-                        $unsecure,
-                        author.to_owned()
-                    )
-                }
-            }
-        };
-
-    }
+    // any further, hence additional checks on author must be done at step 3 !
 
     match unsecure {
-        UnsecureAnyCertificate::User(unsecure) => {
-            let (cooked, _) = verify_certificate_signature!(DeviceOrRoot, unsecure)?;
+        UnsecureCommonTopicCertificate::User(unsecure) => {
+            let (cooked, _) = verify_certificate_signature!(DeviceOrRoot, unsecure, ops, store)?;
 
-            // 4) The certificate is valid, last check is the consistency with other certificates
-            check_user_certificate_consistency(ops, store, current_index, &cooked).await?;
+            // 3) The certificate is valid, last check is the consistency with other certificates
+            check_user_certificate_consistency(ops, store, &cooked).await?;
 
-            Ok(AnyArcCertificate::User(cooked))
+            Ok(CommonTopicArcCertificate::User(cooked))
         }
-        UnsecureAnyCertificate::Device(unsecure) => {
-            let (cooked, _) = verify_certificate_signature!(DeviceOrRoot, unsecure)?;
+        UnsecureCommonTopicCertificate::Device(unsecure) => {
+            let (cooked, _) = verify_certificate_signature!(DeviceOrRoot, unsecure, ops, store)?;
 
-            // 4) The certificate is valid, last check is the consistency with other certificates
-            check_device_certificate_consistency(ops, store, current_index, &cooked).await?;
+            // 3) The certificate is valid, last check is the consistency with other certificates
+            check_device_certificate_consistency(ops, store, &cooked).await?;
 
-            Ok(AnyArcCertificate::Device(cooked))
+            Ok(CommonTopicArcCertificate::Device(cooked))
         }
-        UnsecureAnyCertificate::RevokedUser(unsecure) => {
-            let (cooked, _) = verify_certificate_signature!(Device, unsecure)?;
+        UnsecureCommonTopicCertificate::UserUpdate(unsecure) => {
+            let (cooked, _) = verify_certificate_signature!(Device, unsecure, ops, store)?;
 
-            // 4) The certificate is valid, last check is the consistency with other certificates
-            check_revoked_user_certificate_consistency(ops, store, current_index, &cooked).await?;
+            // 3) The certificate is valid, last check is the consistency with other certificates
+            check_user_update_certificate_consistency(ops, store, &cooked).await?;
 
-            Ok(AnyArcCertificate::RevokedUser(cooked))
+            Ok(CommonTopicArcCertificate::UserUpdate(cooked))
         }
-        UnsecureAnyCertificate::UserUpdate(unsecure) => {
-            let (cooked, _) = verify_certificate_signature!(Device, unsecure)?;
+        UnsecureCommonTopicCertificate::RevokedUser(unsecure) => {
+            let (cooked, _) = verify_certificate_signature!(Device, unsecure, ops, store)?;
 
-            // 4) The certificate is valid, last check is the consistency with other certificates
-            check_user_update_certificate_consistency(ops, store, current_index, &cooked).await?;
+            // 3) The certificate is valid, last check is the consistency with other certificates
+            check_revoked_user_certificate_consistency(ops, store, &cooked).await?;
 
-            Ok(AnyArcCertificate::UserUpdate(cooked))
-        }
-        UnsecureAnyCertificate::RealmRole(unsecure) => {
-            let (cooked, _) = verify_certificate_signature!(DeviceOrRoot, unsecure)?;
-
-            // 4) The certificate is valid, last check is the consistency with other certificates
-            check_realm_role_certificate_consistency(store, current_index, &cooked).await?;
-
-            Ok(AnyArcCertificate::RealmRole(cooked))
-        }
-
-        UnsecureAnyCertificate::SequesterAuthority(unsecure) => {
-            // Sequester authority can only be signed by root
-            let (cooked, _) = unsecure
-                .verify_signature(ops.device.root_verify_key())
-                .map(|(certif, serialized)| (Arc::new(certif), serialized))
-                .map_err(|(unsecure, error)| {
-                    let hint = unsecure.hint();
-                    let what = InvalidCertificateError::Corrupted { hint, error };
-                    AddCertificateError::InvalidCertificate(what)
-                })?;
-
-            // 4) The certificate is valid, last check is the consistency with other certificates
-            check_sequester_authority_certificate_consistency(ops, store, current_index, &cooked)
-                .await?;
-
-            Ok(AnyArcCertificate::SequesterAuthority(cooked))
-        }
-
-        UnsecureAnyCertificate::SequesterService(unsecure) => {
-            // Sequester services can only be signed by authority
-            let (cooked, _) = match store
-                .get_sequester_authority_certificate(UpTo::Index(current_index))
-                .await
-            {
-                Ok(authority) => unsecure
-                    .verify_signature(&authority.verify_key_der)
-                    .map(|(certif, serialized)| (Arc::new(certif), serialized))
-                    .map_err(|(unsecure, error)| {
-                        let hint = unsecure.hint();
-                        let what = InvalidCertificateError::Corrupted { hint, error };
-                        AddCertificateError::InvalidCertificate(what)
-                    }),
-                Err(GetCertificateError::NonExisting) => {
-                    // Our organization is not a sequestered one :(
-                    let hint = unsecure.hint();
-                    let what = InvalidCertificateError::NotASequesteredOrganization { hint };
-                    Err(AddCertificateError::InvalidCertificate(what))
-                }
-                // `ExistButTooRecent` case should never occur given the authority
-                // certificate is added during organization bootstrap along with the
-                // initial user and device certificates. Hence, if we are currently
-                // checking a sequester service certificate, the index must be higher !
-                Err(GetCertificateError::ExistButTooRecent {
-                    certificate_index, ..
-                }) => {
-                    let hint = unsecure.hint();
-                    // TODO: improve error logging (struct log, org/device already captured by default, sentry compat etc.)
-                    let org = ops.device.organization_id();
-                    let device_id = &ops.device.device_id;
-                    log::error!(
-                        "{org}#{device_id}: `{hint}`: the sequester service we tried to add is said to be older than sequester authority (#{index} vs #{certificate_index})"
-                    );
-                    return Err(AddCertificateError::Internal(anyhow::anyhow!("`{hint}`: the sequester service we tried to add is said to be older than sequester authority (#{index} vs #{certificate_index})")));
-                }
-                Err(err @ GetCertificateError::Internal(_)) => Err(anyhow::anyhow!(err).into()),
-            }?;
-
-            // 4) The certificate is valid, last check is the consistency with other certificates
-            check_sequester_service_certificate_consistency(store, current_index, &cooked).await?;
-
-            Ok(AnyArcCertificate::SequesterService(cooked))
+            Ok(CommonTopicArcCertificate::RevokedUser(cooked))
         }
     }
 }
 
+/// Validate the given certificate by both checking it content (format, signature, etc.)
+/// and it global consistency with the others certificates.
+async fn validate_realm_certificate(
+    ops: &CertificatesOps,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    realm_id: VlobID,
+    signed: Bytes,
+) -> Result<RealmTopicArcCertificate, AddCertificateError> {
+    // 1) Deserialize the certificate first
+
+    let unsecure = match RealmTopicCertificate::unsecure_load(signed) {
+        Ok(unsecure) => unsecure,
+        Err(error) => {
+            // No information can be extracted from the binary data...
+            let hint = "<unknown>".into();
+            let what = InvalidCertificateError::Corrupted { hint, error };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+    };
+
+    // 2) Verify the certificate signature
+    // By doing so we also verify author's device existence, but we don't go
+    // any further, hence additional checks on author must be done at step 3 !
+
+    match unsecure {
+        UnsecureRealmTopicCertificate::RealmRole(unsecure) => {
+            let (cooked, _) = verify_certificate_signature!(DeviceOrRoot, unsecure, ops, store)?;
+
+            // 3) Ensure the certificate corresponds to the considered realm
+            if cooked.realm_id != realm_id {
+                let hint = format!("{:?}", cooked);
+                let error = DataError::UnexpectedRealmID { expected: realm_id, got: cooked.realm_id };
+                let what = InvalidCertificateError::Corrupted { hint, error };
+                return Err(AddCertificateError::InvalidCertificate(what));
+            }
+
+            // 4) The certificate is valid, last check is the consistency with other certificates
+            check_realm_role_certificate_consistency(store, &cooked).await?;
+
+            Ok(RealmTopicArcCertificate::RealmRole(cooked))
+        }
+    }
+}
+
+/// Validate the given certificate by both checking it content (format, signature, etc.)
+/// and it global consistency with the others certificates.
+async fn validate_sequester_certificate(
+    ops: &CertificatesOps,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    signed: Bytes,
+) -> Result<SequesterTopicArcCertificate, AddCertificateError> {
+    let maybe_last_timestamp = store.get_last_timestamps().await?.sequester;
+    match maybe_last_timestamp {
+        // No sequester certificates currently exists, that means we must be currently
+        // validating the sequester authority certificate.
+        None => validate_sequester_authority_certificate(ops, store, signed).await.map(SequesterTopicArcCertificate::SequesterAuthority),
+        // Some sequester certificates already exist. Hence the current certificate
+        // cannot be a sequester authority.
+        Some(last_sequester_timestamp) => validate_sequester_non_authority_certificate(
+            store,
+            last_sequester_timestamp,
+            signed
+        ).await,
+    }
+}
+
+async fn validate_sequester_authority_certificate(
+    ops: &CertificatesOps,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    signed: Bytes,
+) -> Result<Arc<SequesterAuthorityCertificate>, AddCertificateError> {
+    // 1) Deserialize the certificate first
+
+    let unsecure = match SequesterAuthorityCertificate::unsecure_load(signed) {
+        Ok(unsecure) => unsecure,
+        Err(error) => {
+            // No information can be extracted from the binary data...
+            let hint = "<unknown>".into();
+            let what = InvalidCertificateError::Corrupted { hint, error };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+    };
+
+    // 2) Verify the certificate signature
+
+    let cooked = unsecure.verify_signature(ops.device.root_verify_key())
+        .map(|(certif, _)| Arc::new(certif))
+        .map_err(|(unsecure, error)| {
+            let hint = unsecure.hint();
+            InvalidCertificateError::Corrupted { hint, error }
+        })?;
+
+    // 4) The certificate is valid, last check is the consistency with other certificates
+    check_sequester_authority_certificate_consistency(store, &*cooked).await?;
+
+    Ok(cooked)
+}
+
+async fn validate_sequester_non_authority_certificate(
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    last_stored_sequester_timestamp: DateTime,
+    signed: Bytes,
+) -> Result<SequesterTopicArcCertificate, AddCertificateError> {
+    // 1) Deserialize the certificate first
+
+    let unsecure = match SequesterServiceCertificate::unsecure_load(signed) {
+        Ok(unsecure) => unsecure,
+        Err(error) => {
+            // No information can be extracted from the binary data...
+            let hint = "<unknown>".into();
+            let what = InvalidCertificateError::Corrupted { hint, error };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+    };
+
+    // 2) Verify the certificate signature
+
+    let cooked = match store.get_sequester_authority_certificate().await? {
+        Some(authority) => unsecure
+            .verify_signature(&authority.verify_key_der)
+            .map(|(certif, _)| Arc::new(certif))
+            .map_err(|(unsecure, error)| {
+                let hint = unsecure.hint();
+                let what = InvalidCertificateError::Corrupted { hint, error };
+                AddCertificateError::InvalidCertificate(what)
+            })?,
+        None => {
+            // Our organization is not a sequestered one :(
+            let hint = unsecure.hint();
+            let what = InvalidCertificateError::NotASequesteredOrganization { hint };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+    };
+
+    // 3) The certificate is valid, last check is the consistency with other certificates
+    check_sequester_service_certificate_consistency(store, last_stored_sequester_timestamp, &cooked).await?;
+
+    Ok(SequesterTopicArcCertificate::SequesterService(cooked))
+}
+
 async fn check_user_exists(
-    store: &CertificatesStoreWriteGuard<'_>,
-    up_to_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    up_to: DateTime,
     user_id: &UserID,
     mk_hint: impl FnOnce() -> String,
 ) -> Result<Arc<UserCertificate>, AddCertificateError> {
     match store
-        .get_user_certificate(UpTo::Index(up_to_index), user_id.to_owned())
+        .get_user_certificate(UpTo::Timestamp(up_to), user_id.to_owned())
         .await
     {
         // User exists as we expected :)
@@ -542,13 +549,13 @@ async fn check_user_exists(
 }
 
 async fn check_user_not_revoked(
-    store: &CertificatesStoreWriteGuard<'_>,
-    up_to_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    up_to: DateTime,
     user_id: &UserID,
     mk_hint: impl FnOnce() -> String,
 ) -> Result<(), AddCertificateError> {
     match store
-        .get_revoked_user_certificate(UpTo::Index(up_to_index), user_id.to_owned())
+        .get_revoked_user_certificate(UpTo::Timestamp(up_to), user_id.to_owned())
         .await?
     {
         // Not revoked, as expected :)
@@ -572,14 +579,14 @@ async fn check_user_not_revoked(
 /// so what's left is checking it is not revoked and (optionally) it profile
 async fn check_author_not_revoked_and_profile(
     ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    up_to_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    up_to: DateTime,
     author: &UserID,
     author_must_be_admin: bool,
     mk_hint: impl FnOnce() -> String + std::marker::Copy,
 ) -> Result<(), AddCertificateError> {
     match store
-        .get_revoked_user_certificate(UpTo::Index(up_to_index), author.to_owned())
+        .get_revoked_user_certificate(UpTo::Timestamp(up_to), author.to_owned())
         .await?
     {
         // Not revoked, as expected :)
@@ -597,7 +604,7 @@ async fn check_author_not_revoked_and_profile(
     }
 
     if author_must_be_admin {
-        match get_user_profile(store, up_to_index, author, mk_hint, None).await {
+        match get_user_profile(store, up_to, author, mk_hint, None).await {
             Ok(profile) => {
                 if profile != UserProfile::Admin {
                     let hint = mk_hint();
@@ -626,9 +633,7 @@ async fn check_author_not_revoked_and_profile(
                 )));
             }
             // D'oh :/
-            Err(err) => {
-                return Err(AddCertificateError::Internal(err.into()));
-            }
+            Err(err) => return Err(err),
         }
     }
 
@@ -636,15 +641,15 @@ async fn check_author_not_revoked_and_profile(
 }
 
 async fn get_user_profile(
-    store: &CertificatesStoreWriteGuard<'_>,
-    up_to_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    up_to: DateTime,
     user_id: &UserID,
     mk_hint: impl FnOnce() -> String,
     already_fetched_user_certificate: Option<Arc<UserCertificate>>,
 ) -> Result<UserProfile, AddCertificateError> {
-    // Updates are ordered by index, so last one contains the current profile
+    // Updates overwrite each others, so last one contains the current profile
     let maybe_update = store
-        .get_last_user_update_certificate(UpTo::Index(up_to_index), user_id.to_owned())
+        .get_last_user_update_certificate(UpTo::Timestamp(up_to), user_id.to_owned())
         .await?;
     if let Some(last_update) = maybe_update {
         return Ok(last_update.new_profile);
@@ -653,7 +658,7 @@ async fn get_user_profile(
     // No updates, the current profile is the one specified in the user certificate
     let user_certificate = match already_fetched_user_certificate {
         Some(user_certificate) => user_certificate,
-        None => check_user_exists(store, up_to_index, user_id, mk_hint).await?,
+        None => check_user_exists(store, up_to, user_id, mk_hint).await?,
     };
 
     Ok(user_certificate.profile)
@@ -661,33 +666,81 @@ async fn get_user_profile(
 
 async fn check_user_certificate_consistency(
     ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    current_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
     cooked: &UserCertificate,
 ) -> Result<(), AddCertificateError> {
     let mk_hint = || format!("{:?}", cooked);
 
-    // 1) Check author is not revoked and has ADMIN profile
+    // 1) Certificate must be the newest among the ones in common topic.
+    //
+    // There is however a single case where we accept same timestamp: during
+    // user creation, a user and device certificates are created together.
+    // In that case the device certificate always provided second, so we don't
+    // have any check to do here.
+    //
+    // On top of that, the sequester authority certificate (if it exists) have
+    // the same timestamp than the first user certificate. However they belong
+    // to different topics so we don't bother to enforce this.
 
-    if let CertificateSignerOwned::User(author) = &cooked.author {
-        check_author_not_revoked_and_profile(
-            ops,
-            store,
-            current_index,
-            author.user_id(),
-            true,
-            mk_hint,
-        )
-        .await?;
+    // It is possible for the storage to be empty here (if we are validating the
+    // very first user certificate that is created during organization bootstrap)
+    let last_stored_common_timestamp = store.get_last_timestamps().await?.common;
+    if let Some(last_stored_timestamp) = &last_stored_common_timestamp {
+        if &cooked.timestamp <= last_stored_timestamp {
+            let hint = mk_hint();
+            let what = InvalidCertificateError::InvalidTimestamp {
+                hint,
+                last_certificate_timestamp: *last_stored_timestamp
+            };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
     }
-    // TODO: should we go further in the checking ?
-    // - only the very first user (across all users) should be allowed to be signed by root
-    // (This check is not enforced in Parsec <= 2.15, and might be overkill ?)
 
-    // 2) Make sure the user doesn't already exists
+    // 2) Check author
+
+    match &cooked.author {
+        // 2.a) If author is a user, it should have has ADMIN profile and not be revoked.
+        CertificateSignerOwned::User(author) => {
+            check_author_not_revoked_and_profile(
+                ops,
+                store,
+                cooked.timestamp,
+                author.user_id(),
+                true,
+                mk_hint,
+            )
+            .await?;
+        }
+        // 2.b) Otherwise we are checking the first user created during organization bootstrap.
+        // In that case no other certificates should be present (except for the
+        // sequester authority certificate if it exists).
+        CertificateSignerOwned::Root => {
+            // Other topics depend on common topic (i.e. their certificates are signed
+            // by a device), so need to ensure they are empty.
+            if last_stored_common_timestamp.is_some() {
+                let hint = mk_hint();
+                let what = InvalidCertificateError::RootSignatureOutOfBootstrap {
+                    hint,
+                };
+                return Err(AddCertificateError::InvalidCertificate(what));
+            }
+            if let Some(sequester_authority_certif) = store.get_sequester_authority_certificate().await? {
+                if sequester_authority_certif.timestamp != cooked.timestamp {
+                    let hint = mk_hint();
+                    let what = InvalidCertificateError::RootSignatureTimestampMismatch {
+                        hint,
+                        last_root_signature_timestamp: sequester_authority_certif.timestamp,
+                    };
+                    return Err(AddCertificateError::InvalidCertificate(what));
+                }
+            }
+        }
+    }
+
+    // 3) Make sure the user doesn't already exists
 
     match store
-        .get_user_certificate(UpTo::Index(current_index), cooked.user_id.clone())
+        .get_user_certificate(UpTo::Timestamp(cooked.timestamp), cooked.user_id.clone())
         .await
     {
         // This user doesn't already exist, this is what we expected :)
@@ -700,18 +753,18 @@ async fn check_user_certificate_consistency(
             return Err(AddCertificateError::InvalidCertificate(what));
         }
 
-        // This case should never happen given we have already checked
-        // `index` is higher than the current stored index.
+        // This case should never happen given we have already checked our current
+        // certificate is more recent than the ones stored.
         Err(GetCertificateError::ExistButTooRecent {
-            certificate_index, ..
+            certificate_timestamp, ..
         }) => {
             // TODO: improve error logging (struct log, org/device already captured by default, sentry compat etc.)
             let org = ops.device.organization_id();
             let device_id = &ops.device.device_id;
             let hint = mk_hint();
-            let index = current_index + 1;
-            log::error!("{org}#{device_id}: `{hint}`: already checked index, but now storage says it is too recent ({index} vs {certificate_index} in storage)");
-            return Err(AddCertificateError::Internal(anyhow::anyhow!("`{hint}`: already checked index, but now storage says it is too recent ({index} vs {certificate_index} in storage)")));
+            let timestamp = cooked.timestamp;
+            log::error!("{org}#{device_id}: `{hint}`: already checked timestamp, but now storage says it is too recent ({timestamp} vs {certificate_timestamp} in storage)");
+            return Err(AddCertificateError::Internal(anyhow::anyhow!("`{hint}`: already checked index, but now storage says it is too recent ({timestamp} vs {certificate_timestamp} in storage)")));
         }
 
         // D'oh :/
@@ -721,7 +774,7 @@ async fn check_user_certificate_consistency(
     }
 
     // If the user doesn't already exist, we are guaranteed we also don't have other
-    // types of certificate related to this user id in the local database
+    // types of certificate related to this user ID in the local database
     // So those conditions are already guaranteed:
     // - the user has no related device
     // - the user is not revoked
@@ -730,54 +783,168 @@ async fn check_user_certificate_consistency(
     Ok(())
 }
 
-async fn check_revoked_user_certificate_consistency(
+async fn check_device_certificate_consistency(
     ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    current_index: IndexInt,
-    cooked: &RevokedUserCertificate,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    cooked: &DeviceCertificate,
 ) -> Result<(), AddCertificateError> {
     let mk_hint = || format!("{:?}", cooked);
+    let user_id = cooked.device_id.user_id();
 
-    // 1) Check the certificate is not self-signed
+    // 1) Certificate must be the newest among the ones in common topic.
+    // There is however a single case where we accept same timestamp: during
+    // user creation, a user and device certificates are created together.
 
-    if cooked.author.user_id() == &cooked.user_id {
-        let hint = mk_hint();
-        let what = InvalidCertificateError::SelfSigned { hint };
-        return Err(AddCertificateError::InvalidCertificate(what));
+    // It is possible for the storage to be empty here: if we are validating the
+    // very first device certificate that is created during organization bootstrap.
+    // This is unlikely though given the user certificate is required to be provided
+    // first (and if that's not the case the validation will fail in later check).
+    let last_stored_common_timestamp = store.get_last_timestamps().await?.common;
+    if let Some(last_stored_timestamp) = &last_stored_common_timestamp {
+        if &cooked.timestamp <= last_stored_timestamp {
+            let hint = mk_hint();
+            let what = InvalidCertificateError::InvalidTimestamp {
+                hint,
+                last_certificate_timestamp: *last_stored_timestamp
+            };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
     }
 
-    // 2) Check author is not revoked and has ADMIN profile
+    // 2) Check author
 
-    check_author_not_revoked_and_profile(
-        ops,
-        store,
-        current_index,
-        cooked.author.user_id(),
-        true,
-        mk_hint,
-    )
-    .await?;
+    let is_first_user_device = match &cooked.author {
+        // 2.a) Same-user-signed: the user has created a new device for himself (hence doesn't need to be ADMIN)
+        CertificateSignerOwned::User(author) if author.user_id() == user_id => {
+            check_author_not_revoked_and_profile(
+                ops,
+                store,
+                cooked.timestamp,
+                author.user_id(),
+                false,
+                mk_hint,
+            )
+            .await?;
+            false
+        }
+
+        // 2.b) Not same-user-signed: The author is an ADMIN that have enrolled the user
+        CertificateSignerOwned::User(author) => {
+            check_author_not_revoked_and_profile(
+                ops,
+                store,
+                cooked.timestamp,
+                author.user_id(),
+                true,
+                mk_hint,
+            )
+            .await?;
+            true
+        }
+
+        // 2.c) Not same-user-signed: First device of the user that have bootstrapped the organization
+        // In that case no other certificates should be present (except for the corresponding
+        // user certificate and the sequester authority certificate if it exists).
+        CertificateSignerOwned::Root => {
+            true
+        }
+    };
 
     // 3) Make sure the user exists
 
-    check_user_exists(store, current_index, &cooked.user_id, mk_hint).await?;
+    let user_certif = check_user_exists(store, cooked.timestamp, user_id, mk_hint).await?;
+    if is_first_user_device {
+        // Only the very first device of a user can be signed by someone else. Hence
+        // the previous certificate must be user certificate with the same timestamp
+        // and author than our current one.
+        if user_certif.author != cooked.author {
+            let hint = mk_hint();
+            let what = InvalidCertificateError::UserFirstDeviceAuthorMismatch {
+                hint,
+                user_author: user_certif.author.clone(),
+            };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+        if user_certif.timestamp != cooked.timestamp {
+            let hint = mk_hint();
+            let what = InvalidCertificateError::UserFirstDeviceTimestampMismatch {
+                hint,
+                user_timestamp: user_certif.timestamp,
+            };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+    }
 
     // 4) Make sure the user is not already revoked
 
-    check_user_not_revoked(store, current_index, &cooked.user_id, mk_hint).await?;
+    check_user_not_revoked(store, cooked.timestamp, user_id, mk_hint).await?;
+
+    // 5) Make sure this device doesn't already exist
+
+    match store
+        .get_device_certificate(UpTo::Timestamp(cooked.timestamp), cooked.device_id.to_owned())
+        .await
+    {
+        // This device doesn't already exist, this is what we expected :)
+        Err(GetCertificateError::NonExisting) => (),
+
+        // This device already exists :(
+        Ok(_) => {
+            let hint = mk_hint();
+            let what = InvalidCertificateError::ContentAlreadyExists { hint };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+
+        // This case should never happen given we have already checked our current
+        // certificate is more recent than the ones stored.
+        Err(GetCertificateError::ExistButTooRecent {
+            certificate_timestamp, ..
+        }) => {
+            // TODO: improve error logging (struct log, org/device already captured by default, sentry compat etc.)
+            let org = ops.device.organization_id();
+            let device_id = &ops.device.device_id;
+            let hint = mk_hint();
+            let timestamp = cooked.timestamp;
+            log::error!("{org}#{device_id}: `{hint}`: already checked timestamp, but now storage says it is too recent ({timestamp} vs {certificate_timestamp} in storage)");
+            return Err(AddCertificateError::Internal(anyhow::anyhow!("`{hint}`: already checked timestamp, but now storage says it is too recent ({timestamp} vs {certificate_timestamp} in storage)")));
+        }
+
+        // D'oh :/
+        Err(err @ GetCertificateError::Internal(_)) => {
+            return Err(AddCertificateError::Internal(err.into()));
+        }
+    }
 
     Ok(())
 }
 
 async fn check_user_update_certificate_consistency(
     ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    current_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
     cooked: &UserUpdateCertificate,
 ) -> Result<(), AddCertificateError> {
     let mk_hint = || format!("{:?}", cooked);
 
-    // 1) Check the certificate is not self-signed
+    // 1) Certificate must be the newest among the ones in common topic.
+    // Note we also reject same timestamp given revoked user certificates is
+    // always created alone.
+
+    // We have already fetched the author's device certificate while validating the
+    // certificate, so `last_stored_timestamp` should never be `None`.
+    // And even if that's the case, the following checks involve fetching stored
+    // certificates and hence will fail.
+    if let Some(last_stored_timestamp) = store.get_last_timestamps().await?.common {
+        if cooked.timestamp <= last_stored_timestamp {
+            let hint = mk_hint();
+            let what = InvalidCertificateError::InvalidTimestamp {
+                hint,
+                last_certificate_timestamp: last_stored_timestamp
+            };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+    }
+
+    // 2) Check the certificate is not self-signed
 
     if cooked.author.user_id() == &cooked.user_id {
         let hint = mk_hint();
@@ -785,32 +952,32 @@ async fn check_user_update_certificate_consistency(
         return Err(AddCertificateError::InvalidCertificate(what));
     }
 
-    // 2) Check author is not revoked and has ADMIN profile
+    // 3) Check author is not revoked and has ADMIN profile
 
     check_author_not_revoked_and_profile(
         ops,
         store,
-        current_index,
+        cooked.timestamp,
         cooked.author.user_id(),
         true,
         mk_hint,
     )
     .await?;
 
-    // 3) Make sure the user exists
+    // 4) Make sure the user exists
 
     let user_certificate =
-        check_user_exists(store, current_index, &cooked.user_id, mk_hint).await?;
+        check_user_exists(store, cooked.timestamp, &cooked.user_id, mk_hint).await?;
 
-    // 4) Make sure the user is not already revoked
+    // 5) Make sure the user is not already revoked
 
-    check_user_not_revoked(store, current_index, &cooked.user_id, mk_hint).await?;
+    check_user_not_revoked(store, cooked.timestamp, &cooked.user_id, mk_hint).await?;
 
-    // 5) Make sure the user doesn't already have this profile
+    // 6) Make sure the user doesn't already have this profile
 
     let user_current_profile = get_user_profile(
         store,
-        current_index,
+        cooked.timestamp,
         &cooked.user_id,
         mk_hint,
         Some(user_certificate),
@@ -823,17 +990,17 @@ async fn check_user_update_certificate_consistency(
         return Err(AddCertificateError::InvalidCertificate(what));
     }
 
-    // 6) If user is downgraded to Outsider, it should not be Owner/Manager of any shared realm
+    // 7) If user is downgraded to Outsider, it should not be Owner/Manager of any shared realm
     if cooked.new_profile == UserProfile::Outsider {
         for certif in store
-            .get_user_realms_roles(UpTo::Index(current_index), cooked.user_id.clone())
+            .get_user_realms_roles(UpTo::Timestamp(cooked.timestamp), cooked.user_id.clone())
             .await?
         {
             match certif.role {
                 // Outsider can be owner only if the workspace is not shared
                 Some(RealmRole::Owner) => {
                     let roles = store
-                        .get_realm_roles(UpTo::Index(current_index), certif.realm_id)
+                        .get_realm_roles(UpTo::Timestamp(cooked.timestamp), certif.realm_id)
                         .await?;
                     // If the workspace is not shared, there should be only a single certificate
                     // (given one cannot change it own role !)
@@ -857,101 +1024,65 @@ async fn check_user_update_certificate_consistency(
     Ok(())
 }
 
-async fn check_device_certificate_consistency(
+async fn check_revoked_user_certificate_consistency(
     ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    current_index: IndexInt,
-    cooked: &DeviceCertificate,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    cooked: &RevokedUserCertificate,
 ) -> Result<(), AddCertificateError> {
     let mk_hint = || format!("{:?}", cooked);
-    let user_id = cooked.device_id.user_id();
 
-    // 1) Device certificate can be self-signed
-    match &cooked.author {
-        // Self-signed: the user has created a new device for himself (hence doesn't need to be ADMIN)
-        CertificateSignerOwned::User(author) if author.user_id() == user_id => {
-            check_author_not_revoked_and_profile(
-                ops,
-                store,
-                current_index,
-                author.user_id(),
-                false,
-                mk_hint,
-            )
-            .await?;
-        }
+    // 1) Certificate must be the newest among the ones in common topic.
+    // Note we also reject same timestamp given revoked user certificates is
+    // always created alone.
 
-        // Not self-signed: The author is an ADMIN that have enrolled the user
-        CertificateSignerOwned::User(author) => {
-            check_author_not_revoked_and_profile(
-                ops,
-                store,
-                current_index,
-                author.user_id(),
-                true,
-                mk_hint,
-            )
-            .await?;
-        }
-
-        // Not self-signed: First device of the user that have bootstrapped the organization
-        CertificateSignerOwned::Root => {}
-    }
-    // TODO: should we go further in the checking ?
-    // - only the first device of a given user should be allowed to not be self-signed
-    // - only the very first device (across all users) should be allowed to be signed by root
-    // (Those checks are not enforced in Parsec <= 2.15, and might be overkill ?)
-
-    // 2) Make sure the user exists
-
-    check_user_exists(store, current_index, user_id, mk_hint).await?;
-
-    // 3) Make sure the user is not already revoked
-
-    check_user_not_revoked(store, current_index, user_id, mk_hint).await?;
-
-    // 4) Make sure this device doesn't already exist
-
-    match store
-        .get_device_certificate(UpTo::Index(current_index), cooked.device_id.to_owned())
-        .await
-    {
-        // This device doesn't already exist, this is what we expected :)
-        Err(GetCertificateError::NonExisting) => (),
-
-        // This device already exists :(
-        Ok(_) => {
+    // We have already fetched the author's device certificate while validating the
+    // certificate, so `last_stored_timestamp` should never be `None`.
+    // And even if that's the case, the following checks involve fetching stored
+    // certificates and hence will fail.
+    if let Some(last_stored_timestamp) = store.get_last_timestamps().await?.common {
+        if cooked.timestamp <= last_stored_timestamp {
             let hint = mk_hint();
-            let what = InvalidCertificateError::ContentAlreadyExists { hint };
+            let what = InvalidCertificateError::InvalidTimestamp {
+                hint,
+                last_certificate_timestamp: last_stored_timestamp
+            };
             return Err(AddCertificateError::InvalidCertificate(what));
         }
-
-        // This case should never happen given we have already checked
-        // `index` is higher than the current stored index.
-        Err(GetCertificateError::ExistButTooRecent {
-            certificate_index, ..
-        }) => {
-            // TODO: improve error logging (struct log, org/device already captured by default, sentry compat etc.)
-            let org = ops.device.organization_id();
-            let device_id = &ops.device.device_id;
-            let hint = mk_hint();
-            let index = current_index + 1;
-            log::error!("{org}#{device_id}: `{hint}`: already checked index, but now storage says it is too recent ({index} vs {certificate_index} in storage)");
-            return Err(AddCertificateError::Internal(anyhow::anyhow!("`{hint}`: already checked index, but now storage says it is too recent ({index} vs {certificate_index} in storage)")));
-        }
-
-        // D'oh :/
-        Err(err @ GetCertificateError::Internal(_)) => {
-            return Err(AddCertificateError::Internal(err.into()));
-        }
     }
+
+    // 2) Check the certificate is not self-signed
+
+    if cooked.author.user_id() == &cooked.user_id {
+        let hint = mk_hint();
+        let what = InvalidCertificateError::SelfSigned { hint };
+        return Err(AddCertificateError::InvalidCertificate(what));
+    }
+
+    // 3) Check author is not revoked and has ADMIN profile
+
+    check_author_not_revoked_and_profile(
+        ops,
+        store,
+        cooked.timestamp,
+        cooked.author.user_id(),
+        true,
+        mk_hint,
+    )
+    .await?;
+
+    // 4) Make sure the user exists
+
+    check_user_exists(store, cooked.timestamp, &cooked.user_id, mk_hint).await?;
+
+    // 5) Make sure the user is not already revoked
+
+    check_user_not_revoked(store, cooked.timestamp, &cooked.user_id, mk_hint).await?;
 
     Ok(())
 }
 
 async fn check_realm_role_certificate_consistency(
-    store: &CertificatesStoreWriteGuard<'_>,
-    current_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
     cooked: &RealmRoleCertificate,
 ) -> Result<(), AddCertificateError> {
     let mk_hint = || format!("{:?}", cooked);
@@ -972,14 +1103,34 @@ async fn check_realm_role_certificate_consistency(
         }
     };
 
+    // 1) Certificate must be the newest among the ones in it realm's topic.
+    // Note we also reject same timestamp given realm role certificate is always
+    // created alone.
+
+    let last_stored_timestamp = store.get_last_timestamps().await?.realm.get(&cooked.realm_id).cloned();
+    if let Some(last_stored_timestamp) = last_stored_timestamp {
+        if cooked.timestamp <= last_stored_timestamp {
+            // We already know more recent certificates, hence this certificate
+            // cannot be added without breaking causality !
+            let hint = mk_hint();
+            let what = InvalidCertificateError::InvalidTimestamp {
+                hint,
+                last_certificate_timestamp: last_stored_timestamp
+            };
+            return Err(AddCertificateError::InvalidCertificate(what));
+        }
+    }
+
+    // 2) Check author's realm role and if certificate is self-signed.
+
     let realm_current_roles = store
-        .get_realm_roles(UpTo::Index(current_index), cooked.realm_id)
+        .get_realm_roles(UpTo::Timestamp(cooked.timestamp), cooked.realm_id)
         .await?;
 
-    // 1) Check author's realm role and if certificate is self-signed
-
     if realm_current_roles.is_empty() {
-        // 1.a) The realm is a new one, so certificate must be self-signed with a OWNER role
+
+        // 2.a) The realm is a new one, so certificate must be self-signed with a OWNER role.
+
         if author.user_id() != &cooked.user_id {
             let hint = mk_hint();
             let what = InvalidCertificateError::RealmFirstRoleMustBeSelfSigned { hint };
@@ -992,8 +1143,10 @@ async fn check_realm_role_certificate_consistency(
             return Err(AddCertificateError::InvalidCertificate(what));
         }
     } else {
-        // 1.b) The realm already exists, so certificate cannot be self-signed and
-        // author must have a sufficient role
+
+        // 2.b) The realm already exists, so certificate cannot be self-signed and
+        // author must have a sufficient role.
+
         let author_current_role = match realm_current_roles
             .iter()
             .find(|role| &role.user_id == author.user_id())
@@ -1061,20 +1214,20 @@ async fn check_realm_role_certificate_consistency(
         }
     }
 
-    // 2) Make sure the user exists
+    // 3) Make sure the user exists
 
     let user_certificate =
-        check_user_exists(store, current_index, &cooked.user_id, mk_hint).await?;
+        check_user_exists(store, cooked.timestamp, &cooked.user_id, mk_hint).await?;
 
-    // 3) Make sure the user is not already revoked
+    // 4) Make sure the user is not already revoked
 
-    check_user_not_revoked(store, current_index, &cooked.user_id, mk_hint).await?;
+    check_user_not_revoked(store, cooked.timestamp, &cooked.user_id, mk_hint).await?;
 
-    // 3) An Outsider user can  Make sure the user's profile is compatible with the realm and it given role
+    // 5) Make sure the user's profile is compatible with the realm and it given role
 
     let profile = get_user_profile(
         store,
-        current_index,
+        cooked.timestamp,
         &cooked.user_id,
         mk_hint,
         Some(user_certificate),
@@ -1105,66 +1258,49 @@ async fn check_realm_role_certificate_consistency(
 }
 
 async fn check_sequester_authority_certificate_consistency(
-    ops: &CertificatesOps,
-    store: &CertificatesStoreWriteGuard<'_>,
-    current_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
     cooked: &SequesterAuthorityCertificate,
 ) -> Result<(), AddCertificateError> {
-    // 1) Make sure the authority doesn't already exist
+    // Sequester authority certificate must be the very first certificate provided,
+    // so we just have to check the storage is currently empty !
 
-    match store
-        .get_sequester_authority_certificate(UpTo::Index(current_index))
-        .await
-    {
-        // This device doesn't already exist, this is what we expected :)
-        Err(GetCertificateError::NonExisting) => (),
+    let PerTopicLastTimestamps { common, sequester, realm, shamir } = store.get_last_timestamps().await?;
 
-        // This device already exists :(
-        Ok(_) => {
-            let hint = format!("{:?}", cooked);
-            let what = InvalidCertificateError::ContentAlreadyExists { hint };
-            return Err(AddCertificateError::InvalidCertificate(what));
-        }
-
-        // This case should never happen given we have already checked
-        // `index` is higher than the current stored index.
-        Err(GetCertificateError::ExistButTooRecent {
-            certificate_index, ..
-        }) => {
-            // TODO: improve error logging (struct log, org/device already captured by default, sentry compat etc.)
-            let org = ops.device.organization_id();
-            let device_id = &ops.device.device_id;
-            let hint = format!("{:?}", cooked);
-            let index = current_index + 1;
-            log::error!("{org}#{device_id}: `{hint}`: already checked index, but now storage says it is too recent ({index} vs {certificate_index} in storage)");
-            return Err(AddCertificateError::Internal(anyhow::anyhow!("`{hint}`: already checked index, but now storage says it is too recent ({index} vs {certificate_index} in storage)")));
-        }
-
-        // D'oh :/
-        Err(err @ GetCertificateError::Internal(_)) => {
-            return Err(AddCertificateError::Internal(err.into()));
-        }
+    if common.is_some() || sequester.is_some() || !realm.is_empty() || shamir.is_some() {
+        let hint = format!("{:?}", cooked);
+        let what = InvalidCertificateError::SequesterAuthorityMustBeFirst { hint };
+        return Err(AddCertificateError::InvalidCertificate(what));
     }
-
-    // TODO: should we go further in the checking ?
-    // - If it exists, the authority certificate should be the very first certificate index
-    // (This check is not enforced in Parsec <= 2.15, and might be overkill ?)
 
     Ok(())
 }
 
 async fn check_sequester_service_certificate_consistency(
-    store: &CertificatesStoreWriteGuard<'_>,
-    current_index: IndexInt,
+    store: &mut CertificatesStoreWriteGuard<'_>,
+    last_stored_sequester_timestamp: DateTime,
     cooked: &SequesterServiceCertificate,
 ) -> Result<(), AddCertificateError> {
-    // No need to check the existence of sequester authority given it has already
-    // been made while verifying sequester service certificate signature
+    let mk_hint = || format!("{:?}", cooked);
 
-    // 1) Make sure the service doesn't already exist
+    // 1) Certificate must be the newest among the ones in sequester topic.
+    // Note we also reject same timestamp given sequester server certificates
+    // is always created alone.
+
+    if cooked.timestamp <= last_stored_sequester_timestamp {
+        // We already know more recent certificates, hence this certificate
+        // cannot be added without breaking causality !
+        let hint = mk_hint();
+        let what = InvalidCertificateError::InvalidTimestamp {
+            hint,
+            last_certificate_timestamp: last_stored_sequester_timestamp
+        };
+        return Err(AddCertificateError::InvalidCertificate(what));
+    }
+
+    // 2) Make sure the service doesn't already exist
 
     let existing_services = store
-        .get_sequester_service_certificates(UpTo::Index(current_index))
+        .get_sequester_service_certificates(UpTo::Timestamp(cooked.timestamp))
         .await?;
     for existing_service in existing_services {
         if existing_service.service_id == cooked.service_id {

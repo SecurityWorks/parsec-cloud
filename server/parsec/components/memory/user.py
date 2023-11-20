@@ -121,9 +121,6 @@ class MemoryUserComponent(BaseUserComponent):
 
         # Ensure certificate consistency: our certificate must be the newest thing on the server.
 
-        assert (
-            org.last_certificate_or_vlob_timestamp is not None
-        )  # Bootstrap has created the first certif
         # We already ensured user and device certificates' timestamps are consistent,
         # so only need to check one of them here
         if org.last_certificate_or_vlob_timestamp >= u_certif.timestamp:
@@ -132,8 +129,6 @@ class MemoryUserComponent(BaseUserComponent):
             )
 
         # All checks are good, now we do the actual insertion
-
-        org.last_certificate_timestamp = u_certif.timestamp
 
         org.users[u_certif.user_id] = MemoryUser(
             cooked=u_certif,
@@ -202,17 +197,12 @@ class MemoryUserComponent(BaseUserComponent):
 
         # Ensure certificate consistency: our certificate must be the newest thing on the server.
 
-        assert (
-            org.last_certificate_or_vlob_timestamp is not None
-        )  # Bootstrap has created the first certif
         if org.last_certificate_or_vlob_timestamp >= certif.timestamp:
             return RequireGreaterTimestamp(
                 strictly_greater_than=org.last_certificate_or_vlob_timestamp
             )
 
         # All checks are good, now we do the actual insertion
-
-        org.last_certificate_timestamp = certif.timestamp
 
         org.devices[certif.device_id] = MemoryDevice(
             cooked=certif,
@@ -287,17 +277,12 @@ class MemoryUserComponent(BaseUserComponent):
         # approach by considering certificates don't change often so it's no big deal to
         # have a much more coarse approach.
 
-        assert (
-            org.last_certificate_or_vlob_timestamp is not None
-        )  # Bootstrap has created the first certif
         if org.last_certificate_or_vlob_timestamp >= certif.timestamp:
             return RequireGreaterTimestamp(
                 strictly_greater_than=org.last_certificate_or_vlob_timestamp
             )
 
         # All checks are good, now we do the actual insertion
-
-        org.last_certificate_timestamp = certif.timestamp
 
         target_user.revoked_user_certificate = revoked_user_certificate
         target_user.cooked_revoked = certif
@@ -379,9 +364,6 @@ class MemoryUserComponent(BaseUserComponent):
         # approach by considering certificates don't change often so it's no big deal to
         # have a much more coarse approach.
 
-        assert (
-            org.last_certificate_or_vlob_timestamp is not None
-        )  # Bootstrap has created the first certif
         if org.last_certificate_or_vlob_timestamp >= certif.timestamp:
             return RequireGreaterTimestamp(
                 strictly_greater_than=org.last_certificate_or_vlob_timestamp
@@ -398,8 +380,6 @@ class MemoryUserComponent(BaseUserComponent):
         # - It is puzzling for the end user to understand why he cannot change a profile,
         #   and that he have to find somebody with access to a seemingly unrelated realm
         #   to change a role in order to be able to do it !
-
-        org.last_certificate_timestamp = certif.timestamp
 
         target_user.profile_updates.append(
             MemoryUserProfileUpdate(
@@ -432,7 +412,7 @@ class MemoryUserComponent(BaseUserComponent):
         common_after: DateTime | None,
         sequester_after: DateTime | None,
         shamir_after: DateTime | None,
-        realm_after: dict[VlobID, DateTime | None],
+        realm_after: dict[VlobID, DateTime],
     ) -> CertificatesBundle | UserGetCertificatesAsUserBadOutcome:
         try:
             org = self._data.organizations[organization_id]

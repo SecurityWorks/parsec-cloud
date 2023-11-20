@@ -41,13 +41,12 @@ pub(crate) fn generate() -> Arc<TestbedTemplate> {
 
     // 3) Create workspace's realm shared between Alice&Bob, and it initial workspace manifest
 
-    let (wksp1_id, wksp1_key, realm_timestamp) = {
+    let (wksp1_id, wksp1_key) = {
         let event = builder.new_realm("alice");
         let wksp1_id = event.get_event().realm_id;
         let wksp1_key = event.get_event().realm_key.clone();
-        let realm_timestamp = event.get_event().timestamp;
         event.then_share_with("bob", Some(RealmRole::Reader));
-        (wksp1_id, wksp1_key, realm_timestamp)
+        (wksp1_id, wksp1_key)
     };
 
     builder.store_stuff("wksp1_id", &wksp1_id);
@@ -61,8 +60,6 @@ pub(crate) fn generate() -> Arc<TestbedTemplate> {
         wksp1_id,
         "wksp1".parse().unwrap(),
         wksp1_key,
-        1,
-        realm_timestamp,
     );
 
     {

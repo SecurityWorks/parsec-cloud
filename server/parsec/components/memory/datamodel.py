@@ -55,9 +55,6 @@ class MemoryOrganization:
     cooked_sequester_authority: SequesterAuthorityCertificate | None = None
     root_verify_key: VerifyKey | None = field(default=None, repr=False)
     is_expired: bool = False
-    # Should be updated each time a new certificate is added or vlob is created/updated
-    last_certificate_timestamp: DateTime | None = None
-    last_vlob_operation_timestamp: DateTime | None = None
 
     # None for non-sequestered organization
     sequester_services: dict[SequesterServiceID, MemorySequesterService] | None = None
@@ -70,12 +67,74 @@ class MemoryOrganization:
     blocks: dict[BlockID, MemoryBlock] = field(default_factory=dict)
 
     @property
-    def last_certificate_or_vlob_timestamp(self) -> DateTime:
-        assert self.last_certificate_timestamp is not None
-        if self.last_vlob_operation_timestamp is not None:
-            return max(self.last_certificate_timestamp, self.last_vlob_operation_timestamp)
+    def last_sequester_certificate_timestamp(self) -> DateTime:
+        """
+        Raises ValueError if the organization is not sequestered !
+        """
+        if self.cooked_sequester_authority is None:
+            raise ValueError("Not a sequestered organization !")
+        assert self.sequester_services is not None
+        return max(
+            (
+                self.cooked_sequester_authority.timestamp,
+                *(service.cooked.timestamp for service in self.sequester_services.values()),
+            )
+        )
+
+    @property
+    def last_common_certificate_timestamp(self) -> DateTime:
+        """
+        Raises ValueError if the organization is not bootstrapped !
+        """
+        return max(
+            (
+                # User certificates
+                *(u.cooked.timestamp for u in self.users.values()),
+                # Revoked user certificates
+                *(
+                    u.cooked_revoked.timestamp
+                    for u in self.users.values()
+                    if u.cooked_revoked is not None
+                ),
+                # User update certificates
+                *(p.cooked.timestamp for u in self.users.values() for p in u.profile_updates),
+                # Device certificates
+                *(d.cooked.timestamp for d in self.devices.values()),
+            )
+        )
+
+    @property
+    def last_certificate_timestamp(self) -> DateTime:
+        """
+        Raises ValueError if the organization is not bootstrapped !
+        """
+        if self.is_sequestered:
+            return max(
+                self.last_common_certificate_timestamp,
+                self.last_sequester_certificate_timestamp,
+                *(r.last_realm_certificate_timestamp for r in self.realms.values()),
+            )
         else:
-            return self.last_certificate_timestamp
+            # Must pass an iterator to max in case there is no realms (see `max` signature)
+            return max(
+                (
+                    self.last_common_certificate_timestamp,
+                    *(r.last_realm_certificate_timestamp for r in self.realms.values()),
+                )
+            )
+
+    @property
+    def last_certificate_or_vlob_timestamp(self) -> DateTime:
+        """
+        Raises ValueError if the organization is not bootstrapped !
+        """
+        # Must pass an iterator to max in case there is no realms (see `max` signature)
+        return max(
+            (
+                self.last_certificate_timestamp,
+                *(ts for r in self.realms.values() if (ts := r.last_vlob_timestamp) is not None),
+            )
+        )
 
     def clone_as(self, new_organization_id: OrganizationID) -> MemoryOrganization:
         cloned = deepcopy(self)
@@ -247,6 +306,17 @@ class MemoryRealm:
         # And given it is not possible to change his own role, then there must
         # only be a single certificate !
         return len(self.roles) == 1
+
+    @property
+    def last_realm_certificate_timestamp(self) -> DateTime:
+        return self.roles[-1].cooked.timestamp
+
+    @property
+    def last_vlob_timestamp(self) -> DateTime | None:
+        if not self.vlob_updates:
+            return None
+        else:
+            return self.vlob_updates[-1].vlob_atom.created_on
 
 
 @dataclass(slots=True)

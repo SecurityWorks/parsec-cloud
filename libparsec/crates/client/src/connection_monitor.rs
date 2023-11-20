@@ -1,11 +1,12 @@
 // Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 2016-present Scille SAS
 
-use std::{ops::ControlFlow, sync::Arc};
+use std::{ops::ControlFlow, sync::Arc, collections::HashMap};
 
 use libparsec_client_connection::{
     AuthenticatedCmds, ConnectionError, RateLimiter, SSEEventID, SSEResponseOrMissedEvents,
 };
 use libparsec_platform_async::{spawn, stream::StreamExt, JoinHandle};
+use libparsec_platform_storage::certificates::PerTopicLastTimestamps;
 use libparsec_protocol::authenticated_cmds::v4::events_listen::{APIEvent, Rep, Req};
 
 use crate::event_bus::*;
@@ -17,60 +18,56 @@ pub struct ConnectionMonitor {
 fn dispatch_api_event(event: APIEvent, event_bus: &EventBus) {
     match event {
         APIEvent::Pinged { .. } => (),
-        APIEvent::CertificatesUpdated { index } => {
-            let event = EventCertificatesUpdated { index };
+        APIEvent::ServerConfig { active_users_limit, user_profile_outsider_allowed } => {
+            let event = EventServerConfigChanged {active_users_limit, user_profile_outsider_allowed};
             event_bus.send(&event);
         }
-        APIEvent::MessageReceived { index } => {
-            let event = EventMessageReceived { index };
-            event_bus.send(&event);
-        }
-        APIEvent::InviteStatusChanged {
-            invitation_status,
-            token,
-        } => {
+        APIEvent::Invitation { status, token } => {
             let event = EventInviteStatusChanged {
-                invitation_status,
+                invitation_status: status,
                 token,
             };
             event_bus.send(&event);
         }
-        APIEvent::RealmMaintenanceStarted {
-            encryption_revision,
-            realm_id,
-        } => {
-            let event = EventRealmMaintenanceStarted {
-                encryption_revision,
-                realm_id,
-            };
-            event_bus.send(&event);
-        }
-        APIEvent::RealmMaintenanceFinished {
-            encryption_revision,
-            realm_id,
-        } => {
-            let event = EventRealmMaintenanceFinished {
-                encryption_revision,
-                realm_id,
-            };
-            event_bus.send(&event);
-        }
-        APIEvent::RealmVlobsUpdated {
-            checkpoint,
-            realm_id,
-            src_id,
-            src_version,
-        } => {
-            let event = EventRealmVlobsUpdated {
-                checkpoint,
-                realm_id,
-                src_id,
-                src_version,
-            };
-            event_bus.send(&event);
-        }
-        APIEvent::PkiEnrollmentUpdated {} => {
+        APIEvent::PkiEnrollment {  } => {
             let event = EventPkiEnrollmentUpdated {};
+            event_bus.send(&event);
+        }
+        APIEvent::CommonCertificate { timestamp } => {
+            let event = EventCertificatesUpdated { last_timestamps: PerTopicLastTimestamps{
+                common: Some(timestamp), realm: HashMap::default(), sequester: None, shamir: None
+            } };
+            event_bus.send(&event);
+        }
+        APIEvent::SequesterCertificate { timestamp } => {
+            let event = EventCertificatesUpdated { last_timestamps: PerTopicLastTimestamps{
+                common: None, realm: HashMap::default(), sequester: Some(timestamp), shamir: None
+            } };
+            event_bus.send(&event);
+        }
+        APIEvent::ShamirCertificate { timestamp } => {
+            let event = EventCertificatesUpdated { last_timestamps: PerTopicLastTimestamps{
+                common: None, realm: HashMap::default(), sequester: None, shamir: Some(timestamp)
+            } };
+            event_bus.send(&event);
+        }
+        APIEvent::RealmCertificate { realm_id, timestamp } => {
+            let event = EventCertificatesUpdated { last_timestamps: PerTopicLastTimestamps{
+                common: None, realm: HashMap::from([(realm_id, timestamp)]), sequester: None, shamir: None
+            } };
+            event_bus.send(&event);
+        }
+        APIEvent::Vlob { author, blob, last_common_certificate_timestamp, last_realm_certificate_timestamp, realm_id, timestamp, version, vlob_id } => {
+            let event = EventRealmVlobUpdated {
+                author,
+                blob,
+                last_common_certificate_timestamp,
+                last_realm_certificate_timestamp,
+                realm_id,
+                timestamp,
+                version,
+                vlob_id,
+            };
             event_bus.send(&event);
         }
     }

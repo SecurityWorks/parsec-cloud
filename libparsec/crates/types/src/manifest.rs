@@ -207,12 +207,16 @@ pub struct WorkspaceEntry {
     pub id: VlobID,
     pub name: EntryName,
     pub key: SecretKey,
-    pub encryption_revision: IndexInt,
-    pub encrypted_on: DateTime,
+    // Workspace reencription is no longer possible in Parsec v3, this field
+    // is only kept for compatibility reason.
+    #[serde(rename = "encryption_revision")]
+    pub legacy_encryption_revision: IndexInt,
+    #[serde(rename = "encrypted_on")]
+    pub legacy_encrypted_on: DateTime,
     // As they name suggest, `role`/`role_cached_on` are only cache information.
     // However they are no longer needed given certificates are now eagerly
-    // fetched by the client (see `CertificatesOps` internals).
-    // Hence why they are not public: they are only kept for compatibility reason.
+    // fetched by the client (see `CertificatesOps` internals) and are only
+    // kept for compatibility reason.
     #[serde(rename = "role_cached_on")]
     pub legacy_role_cache_timestamp: DateTime,
     #[serde(rename = "role")]
@@ -224,28 +228,28 @@ impl WorkspaceEntry {
         id: VlobID,
         name: EntryName,
         key: SecretKey,
-        encryption_revision: IndexInt,
-        encrypted_on: DateTime,
     ) -> Self {
+        let epoch = DateTime::from_f64_with_us_precision(0.0);
         Self {
             id,
             name,
             key,
-            encryption_revision,
-            encrypted_on,
-            legacy_role_cache_timestamp: DateTime::from_f64_with_us_precision(0.0),
+            legacy_encryption_revision: 1,
+            legacy_encrypted_on: epoch,
+            legacy_role_cache_timestamp: epoch,
             legacy_role_cache_value: None,
         }
     }
 
-    pub fn generate(name: EntryName, timestamp: DateTime) -> Self {
+    pub fn generate(name: EntryName) -> Self {
+        let epoch = DateTime::from_f64_with_us_precision(0.0);
         Self {
             id: VlobID::default(),
             name,
             key: SecretKey::generate(),
-            encryption_revision: 1,
-            encrypted_on: timestamp,
-            legacy_role_cache_timestamp: timestamp,
+            legacy_encryption_revision: 1,
+            legacy_encrypted_on: epoch,
+            legacy_role_cache_timestamp: epoch,
             legacy_role_cache_value: Some(RealmRole::Owner),
         }
     }
@@ -460,7 +464,9 @@ pub struct UserManifest {
     pub version: VersionInt,
     pub created: DateTime,
     pub updated: DateTime,
-    pub last_processed_message: IndexInt,
+    // Message is deprecated in Parsec v3, this field is only kept for compatibility reason.
+    #[serde(rename = "last_processed_message")]
+    pub legacy_last_processed_message: IndexInt,
     pub workspaces: Vec<WorkspaceEntry>,
 }
 
@@ -474,18 +480,35 @@ parsec_data!("schema/manifest/user_manifest.json5");
 
 impl_manifest_dump_load!(UserManifest);
 
-impl_transparent_data_format_conversion!(
-    UserManifest,
-    UserManifestData,
-    author,
-    timestamp,
-    id,
-    version,
-    created,
-    updated,
-    last_processed_message,
-    workspaces,
-);
+impl From<UserManifestData> for UserManifest {
+    fn from(data: UserManifestData) -> Self {
+        Self {
+            author: data.author.into(),
+            timestamp: data.timestamp.into(),
+            id: data.id.into(),
+            version: data.version.into(),
+            created: data.created.into(),
+            updated: data.updated.into(),
+            legacy_last_processed_message: data.last_processed_message.into(),
+            workspaces: data.workspaces.into(),
+        }
+    }
+}
+impl From<UserManifest> for UserManifestData {
+    fn from(obj: UserManifest) -> Self {
+        Self {
+            ty: Default::default(),
+            author: obj.author.into(),
+            timestamp: obj.timestamp.into(),
+            id: obj.id.into(),
+            version: obj.version.into(),
+            created: obj.created.into(),
+            updated: obj.updated.into(),
+            last_processed_message: obj.legacy_last_processed_message.into(),
+            workspaces: obj.workspaces.into(),
+        }
+    }
+}
 
 /*
  * ChildManifest

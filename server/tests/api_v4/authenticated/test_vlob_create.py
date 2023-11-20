@@ -32,6 +32,8 @@ async def test_authenticated_vlob_create_ok(coolorg: CoolorgRpcClients, backend:
                 vlob_id=vlob_id,
                 version=1,
                 blob=v1_blob,
+                last_common_certificate_timestamp=DateTime(2000, 1, 6),
+                last_realm_certificate_timestamp=DateTime(2000, 1, 10),
             )
         )
 

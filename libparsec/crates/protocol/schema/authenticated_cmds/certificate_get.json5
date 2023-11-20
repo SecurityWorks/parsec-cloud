@@ -25,7 +25,7 @@
                     // Skip the certificates before (or at) this timestamp
                     "name": "realm_after",
                     // Key is the realm ID
-                    "type": "Map<VlobID, RequiredOption<DateTime>>"
+                    "type": "Map<VlobID, DateTime>"
                 }
             ]
         },

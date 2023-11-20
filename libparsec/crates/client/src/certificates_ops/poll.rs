@@ -1,14 +1,14 @@
 // Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 2016-present Scille SAS
 
 use libparsec_client_connection::ConnectionError;
+use libparsec_platform_storage::certificates::PerTopicLastTimestamps;
 use libparsec_protocol::authenticated_cmds;
 use libparsec_types::prelude::*;
 
 use super::{
-    store::CertificatesStoreReadGuard, AddCertificateError, CertificatesOps,
+    store::{CertificatesStoreReadGuard, CertificateStorageOperationError}, AddCertificateError, CertificatesOps,
     InvalidCertificateError, MaybeRedactedSwitch,
 };
-use crate::certificates_ops::store::CertificatesStoreReadExt;
 
 #[derive(Debug, thiserror::Error)]
 pub enum PollServerError {
@@ -16,6 +16,8 @@ pub enum PollServerError {
     Offline,
     #[error("A certificate provided by the server is invalid: {0}")]
     InvalidCertificate(#[from] InvalidCertificateError),
+    #[error("Certificate storage is stopped")]
+    StorageStopped,
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -33,93 +35,111 @@ impl From<AddCertificateError> for PollServerError {
     fn from(value: AddCertificateError) -> Self {
         match value {
             AddCertificateError::InvalidCertificate(err) => err.into(),
+            AddCertificateError::StorageStopped => PollServerError::StorageStopped,
             AddCertificateError::Internal(err) => err.into(),
         }
     }
 }
 
-pub(super) async fn ensure_certificates_available_and_read_lock(
-    ops: &CertificatesOps,
-    certificate_index: IndexInt,
-) -> Result<CertificatesStoreReadGuard, PollServerError> {
-    loop {
-        poll_server_for_new_certificates(ops, Some(certificate_index)).await?;
-        let store = ops.store.for_read().await;
-        let last_index = store.get_last_certificate_index().await?;
-        if last_index >= certificate_index {
-            return Ok(store);
-        }
-    }
-}
+// pub(super) async fn ensure_certificates_available_and_read_lock(
+//     ops: &CertificatesOps,
+//     certificate_index: IndexInt,
+// ) -> Result<CertificatesStoreReadGuard, PollServerError> {
+//     loop {
+//         poll_server_for_new_certificates(ops, Some(certificate_index)).await?;
+//         let store = ops.store.for_read().await;
+//         let last_index = store.get_last_certificate_timestamp().await?;
+//         if last_index >= certificate_index {
+//             return Ok(store);
+//         }
+//     }
+// }
 
 pub(super) async fn poll_server_for_new_certificates(
     ops: &CertificatesOps,
-    latest_known_index: Option<IndexInt>,
-) -> Result<IndexInt, PollServerError> {
+    latest_known_timestamps: Option<PerTopicLastTimestamps>,
+) -> Result<(), PollServerError> {
     loop {
-        // 1) Retrieve the last certificate index when are currently aware of
+        // 1) Retrieve the last certificates timestamps when are currently aware of
 
-        let last_index = ops
+        let last_stored_timestamps = ops
             .store
             .for_read()
             .await
-            .get_last_certificate_index()
-            .await?;
+            .get_last_timestamps()
+            .await
+            .map_err(|err| match err {
+                CertificateStorageOperationError::Stopped => PollServerError::StorageStopped,
+                CertificateStorageOperationError::Internal(e) => e.into(),
+            })?;
 
-        // `latest_known_index` is useful to detect outdated `CertificatesUpdated`
+        // `latest_known_timestamps` is useful to detect outdated `CertificatesUpdated`
         // events given the server has already been polled in the meantime.
-        let offset = match (last_index, latest_known_index) {
-            (last_index, Some(latest_known_index)) if last_index >= latest_known_index => {
-                return Ok(last_index)
+        if let Some(latest_known_timestamps) = &latest_known_timestamps {
+            if latest_known_timestamps.is_up_to_date(&last_stored_timestamps) {
+                return Ok(())
             }
-            // Certificate index starts at 1, so can be used as-is as offset
-            (last_index, _) => last_index,
-        };
+        }
 
         // 2) We are missing some certificates, time to ask the server about them...
+        //
+        // But first we must take the write lock so that certificate fetch from server
+        // and add to storage are atomic. This is important to to avoid concurrency
+        // access changing certificates and breaking the deterministic order certificates
+        // must be added on.
 
-        let request = authenticated_cmds::latest::certificate_get::Req { offset };
-        let rep = ops.cmds.send(request).await?;
-        let certificates = match rep {
-            authenticated_cmds::latest::certificate_get::Rep::Ok { certificates } => certificates,
-            authenticated_cmds::latest::certificate_get::Rep::UnknownStatus {
-                unknown_status,
-                ..
-            } => {
-                return Err(anyhow::anyhow!(
-                    "Unknown error status `{}` from server",
-                    unknown_status
+        let outcome = ops.store.for_write(
+            move |store| {
+            async move {
+                // 3) Fetch certificates
+
+                // Last stored timestamp may have changed while we were waiting for the lock.
+                let last_stored_timestamps = store.get_last_timestamps().await?;
+                let request = authenticated_cmds::latest::certificate_get::Req {
+                    common_after: last_stored_timestamps.common,
+                    sequester_after: last_stored_timestamps.sequester,
+                    shamir_after: last_stored_timestamps.shamir,
+                    realm_after: last_stored_timestamps.realm,
+                };
+                let rep = ops.cmds.send(request).await?;
+                let (common_certificates, realm_certificates, sequester_certificates, shamir_certificates) = match rep {
+                    authenticated_cmds::latest::certificate_get::Rep::Ok { common_certificates, realm_certificates, sequester_certificates, shamir_certificates } => {
+                        (common_certificates, realm_certificates, sequester_certificates, shamir_certificates)
+                    },
+                    authenticated_cmds::latest::certificate_get::Rep::UnknownStatus {
+                        unknown_status,
+                        ..
+                    } => {
+                        return Err(PollServerError::Internal(anyhow::anyhow!(
+                            "Unknown error status `{}` from server",
+                            unknown_status
+                        )));
+                    }
+                };
+
+                // 4) Integrate the new certificates.
+
+                super::add::add_certificates_batch(
+                    ops,
+                    store,
+                    &common_certificates,
+                    &sequester_certificates,
+                    &shamir_certificates,
+                    &realm_certificates
+                ).await.map_err(
+                    |err| match err {
+                        AddCertificateError::InvalidCertificate(err) => {
+                            PollServerError::InvalidCertificate(err)
+                        },
+                        AddCertificateError::StorageStopped => PollServerError::StorageStopped,
+                        AddCertificateError::Internal(err) => PollServerError::Internal(err),
+                    }
                 )
-                .into());
             }
-        };
-
-        // 3) Integrate the new certificates. The lock must be help for the whole
-        // time here to avoid concurrency access changing certificate and breaking
-        // the deterministic order certificate must be added on.
-
-        let store = ops.store.for_write().await;
-
-        let new_offset = store.get_last_certificate_index().await?;
-        let final_index = offset + certificates.len() as IndexInt;
-
-        let certificates = match offset.cmp(&new_offset) {
-            // Certificates hasn't changed while we were requesting the server
-            std::cmp::Ordering::Equal => certificates.into_iter().skip(0),
-            // New certificates has been added while we were requesting the server
-            std::cmp::Ordering::Less => {
-                let to_skip = (new_offset - offset) as usize;
-                certificates.into_iter().skip(to_skip)
-            }
-            // Certificates has changed, now we have less certificates than we used to o_O
-            // This special case may occur if the certificate storage got cleared (see below
-            // `MaybeRedactedSwitch`), in this case we just redo everything from the start.
-            std::cmp::Ordering::Greater => continue,
-        };
-
-        let outcome = ops
-            .add_certificates_batch(&store, new_offset, certificates)
-            .await?;
+        }).await.map_err(|err| match err {
+            CertificateStorageOperationError::Stopped => AddCertificateError::StorageStopped,
+            CertificateStorageOperationError::Internal(err) => err.into(),
+        })??;
 
         match outcome {
             MaybeRedactedSwitch::NoSwitch => (),
@@ -129,6 +149,6 @@ pub(super) async fn poll_server_for_new_certificates(
             MaybeRedactedSwitch::Switched => continue,
         }
 
-        return Ok(final_index);
+        return Ok(());
     }
 }

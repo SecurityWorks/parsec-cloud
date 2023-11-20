@@ -185,7 +185,7 @@ class BaseAuthenticatedRpcClient:
         common_after: DateTime | None,
         sequester_after: DateTime | None,
         shamir_after: DateTime | None,
-        realm_after: dict[VlobID, DateTime | None],
+        realm_after: dict[VlobID, DateTime],
     ) -> authenticated_cmds.latest.certificate_get.Rep:
         req = authenticated_cmds.latest.certificate_get.Req(
             common_after=common_after,

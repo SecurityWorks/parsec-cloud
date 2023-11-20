@@ -532,13 +532,12 @@ impl<'a> TestbedEventNewRealmBuilder<'a> {
     pub fn then_add_workspace_entry_to_user_manifest_vlob(
         self,
     ) -> TestbedEventCreateOrUpdateUserManifestVlobBuilder<'a> {
-        let (user, wksp_id, wksp_key, wksp_timestamp) = {
+        let (user, wksp_id, wksp_key) = {
             let realm_event = self.get_event();
             (
                 realm_event.author.user_id().to_owned(),
                 realm_event.realm_id,
                 realm_event.realm_key.clone(),
-                realm_event.timestamp,
             )
         };
 
@@ -550,8 +549,6 @@ impl<'a> TestbedEventNewRealmBuilder<'a> {
             wksp_id,
             "wksp".parse().unwrap(),
             wksp_key,
-            1,
-            wksp_timestamp,
         ));
 
         self.builder

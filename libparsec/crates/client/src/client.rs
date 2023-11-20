@@ -19,7 +19,6 @@ use crate::{
     config::ClientConfig,
     connection_monitor::ConnectionMonitor,
     event_bus::EventBus,
-    messages_monitor::MessagesMonitor,
     running_workspace::RunningWorkspaces,
     user_ops::UserOps,
     user_sync_monitor::UserSyncMonitor,
@@ -60,7 +59,6 @@ pub struct Client {
     pub(crate) running_workspaces: RunningWorkspaces,
     connection_monitor: ConnectionMonitor,
     certificates_monitor: CertificatesMonitor,
-    messages_monitor: MessagesMonitor,
     user_sync_monitor: UserSyncMonitor,
 }
 
@@ -140,7 +138,6 @@ impl Client {
 
         let certificates_monitor =
             CertificatesMonitor::start(certificates_ops.clone(), event_bus.clone()).await;
-        let messages_monitor = MessagesMonitor::start(user_ops.clone(), event_bus.clone()).await;
         let user_sync_monitor = UserSyncMonitor::start(user_ops.clone(), event_bus.clone()).await;
         // Start the connection monitors last, as it send the initial event that wakeup to others
         let connection_monitor = ConnectionMonitor::start(cmds.clone(), event_bus.clone()).await;
@@ -156,7 +153,6 @@ impl Client {
             running_workspaces: RunningWorkspaces::new(),
             connection_monitor,
             certificates_monitor,
-            messages_monitor,
             user_sync_monitor,
         };
 

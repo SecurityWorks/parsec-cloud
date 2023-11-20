@@ -1350,7 +1350,7 @@ impl TestbedEventCreateOrUpdateUserManifestVlob {
 
         // 2) Actual creation
 
-        let (version, last_processed_message, workspaces) = builder
+        let (version, legacy_last_processed_message, workspaces) = builder
             .events
             .iter()
             .rev()
@@ -1360,7 +1360,7 @@ impl TestbedEventCreateOrUpdateUserManifestVlob {
                 {
                     Some((
                         x.manifest.version + 1,
-                        x.manifest.last_processed_message,
+                        x.manifest.legacy_last_processed_message,
                         x.manifest.workspaces.to_owned(),
                     ))
                 }
@@ -1380,7 +1380,7 @@ impl TestbedEventCreateOrUpdateUserManifestVlob {
                 version,
                 created: timestamp,
                 updated: timestamp,
-                last_processed_message,
+                legacy_last_processed_message,
                 workspaces,
             }),
             cache: Arc::default(),

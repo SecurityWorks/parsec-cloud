@@ -385,7 +385,7 @@ fn serde_user_manifest(alice: &Device) {
         version: 42,
         created: now,
         updated: now,
-        last_processed_message: 3,
+        legacy_last_processed_message: 3,
         workspaces: vec![
             WorkspaceEntry {
                 name: "wksp1".parse().unwrap(),
@@ -393,8 +393,8 @@ fn serde_user_manifest(alice: &Device) {
                 key: SecretKey::from(hex!(
                     "6507907d33bae6b5980b32fa03f3ebac56141b126e44f352ea46c5f22cd5ac57"
                 )),
-                encryption_revision: 2,
-                encrypted_on: now,
+                legacy_encryption_revision: 2,
+                legacy_encrypted_on: now,
                 legacy_role_cache_timestamp: now,
                 legacy_role_cache_value: Some(RealmRole::Owner),
             },
@@ -404,8 +404,8 @@ fn serde_user_manifest(alice: &Device) {
                 key: SecretKey::from(hex!(
                     "c21ed3aae92c648cb1b6df8be149ebc872247db0dbd37686ff2d075e2d7505cc"
                 )),
-                encryption_revision: 1,
-                encrypted_on: now,
+                legacy_encryption_revision: 1,
+                legacy_encrypted_on: now,
                 legacy_role_cache_timestamp: now,
                 legacy_role_cache_value: None,
             },

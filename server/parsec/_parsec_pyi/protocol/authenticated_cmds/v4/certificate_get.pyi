@@ -12,7 +12,7 @@ class Req:
         common_after: DateTime | None,
         sequester_after: DateTime | None,
         shamir_after: DateTime | None,
-        realm_after: dict[VlobID, DateTime | None],
+        realm_after: dict[VlobID, DateTime],
     ) -> None: ...
     def dump(self) -> bytes: ...
     @property
@@ -22,7 +22,7 @@ class Req:
     @property
     def shamir_after(self) -> DateTime | None: ...
     @property
-    def realm_after(self) -> dict[VlobID, DateTime | None]: ...
+    def realm_after(self) -> dict[VlobID, DateTime]: ...
 
 class Rep:
     @staticmethod

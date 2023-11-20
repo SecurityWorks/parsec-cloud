@@ -31,6 +31,7 @@ from parsec.components.vlob import (
     VlobCreateBadOutcome,
     VlobPollChangesAsUserBadOutcome,
     VlobReadAsUserBadOutcome,
+    VlobReadResult,
     VlobUpdateBadOutcome,
 )
 from parsec.events import EVENT_VLOB_MAX_BLOB_SIZE, EventVlob
@@ -108,7 +109,6 @@ class MemoryVlobComponent(BaseVlobComponent):
         if maybe_error is not None:
             return maybe_error
 
-        assert org.last_certificate_timestamp is not None  # Orga bootstrapped
         if timestamp < org.last_certificate_timestamp:
             return RequireGreaterTimestamp(strictly_greater_than=org.last_certificate_timestamp)
 
@@ -161,7 +161,6 @@ class MemoryVlobComponent(BaseVlobComponent):
                 vlob_atom=vlob_atom,
             )
         )
-        org.last_vlob_operation_timestamp = timestamp
 
         await self._event_bus.send(
             EventVlob(
@@ -172,6 +171,8 @@ class MemoryVlobComponent(BaseVlobComponent):
                 vlob_id=vlob_id,
                 version=1,
                 blob=blob if len(blob) < EVENT_VLOB_MAX_BLOB_SIZE else None,
+                last_common_certificate_timestamp=org.last_common_certificate_timestamp,
+                last_realm_certificate_timestamp=realm.last_realm_certificate_timestamp,
             )
         )
 
@@ -283,7 +284,6 @@ class MemoryVlobComponent(BaseVlobComponent):
                 vlob_atom=vlob_atom,
             )
         )
-        org.last_vlob_operation_timestamp = timestamp
 
         await self._event_bus.send(
             EventVlob(
@@ -294,6 +294,8 @@ class MemoryVlobComponent(BaseVlobComponent):
                 vlob_id=vlob_id,
                 version=version,
                 blob=blob if len(blob) < EVENT_VLOB_MAX_BLOB_SIZE else None,
+                last_common_certificate_timestamp=org.last_common_certificate_timestamp,
+                last_realm_certificate_timestamp=realm.last_realm_certificate_timestamp,
             )
         )
 
@@ -304,7 +306,7 @@ class MemoryVlobComponent(BaseVlobComponent):
         author: UserID,
         realm_id: VlobID,
         vlobs: list[VlobID],
-    ) -> list[tuple[VlobID, DeviceID, int, DateTime, bytes]] | VlobReadAsUserBadOutcome:
+    ) -> VlobReadResult | VlobReadAsUserBadOutcome:
         try:
             org = self._data.organizations[organization_id]
         except KeyError:
@@ -351,7 +353,11 @@ class MemoryVlobComponent(BaseVlobComponent):
             except KeyError:
                 pass
 
-        return output
+        return VlobReadResult(
+            vlobs=output,
+            last_common_certificate_timestamp=org.last_common_certificate_timestamp,
+            last_realm_certificate_timestamp=realm.last_realm_certificate_timestamp,
+        )
 
     @override
     async def poll_changes_as_user(

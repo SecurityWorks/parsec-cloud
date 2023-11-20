@@ -1,5 +1,7 @@
 // Parsec Cloud (https://parsec.cloud) Copyright (c) BUSL-1.1 2016-present Scille SAS
 
+use std::collections::HashMap;
+
 use libparsec_tests_fixtures::prelude::*;
 use libparsec_types::prelude::*;
 
@@ -14,10 +16,12 @@ async fn corrupted_signature(env: &TestbedEnv) {
 
     let signed = Bytes::from_static(b"corrupted");
 
-    let store = ops.store.for_write().await;
-
-    let err = ops
-        .add_certificates_batch(&store, 0, [signed].into_iter())
+    let err = ops.add_certificates_batch(
+        &[signed],
+        &[],
+        &[],
+        &HashMap::default(),
+    )
         .await
         .unwrap_err();
 
@@ -37,10 +41,12 @@ async fn corrupted_compression(env: &TestbedEnv) {
 
     let signed = Bytes::from(alice.signing_key.sign(b"corrupted"));
 
-    let store = ops.store.for_write().await;
-
-    let err = ops
-        .add_certificates_batch(&store, 0, [signed].into_iter())
+    let err = ops.add_certificates_batch(
+        &[signed],
+        &[],
+        &[],
+        &HashMap::default(),
+    )
         .await
         .unwrap_err();
 
@@ -66,16 +72,18 @@ async fn corrupted_serialization(env: &TestbedEnv) {
         version: 0,
         created: now,
         updated: now,
-        last_processed_message: 0,
+        legacy_last_processed_message: 0,
         workspaces: vec![],
     };
 
     let signed = Bytes::from(manifest.dump_and_sign(&alice.signing_key));
 
-    let store = ops.store.for_write().await;
-
-    let err = ops
-        .add_certificates_batch(&store, 0, [signed].into_iter())
+    let err = ops.add_certificates_batch(
+        &[signed],
+        &[],
+        &[],
+        &HashMap::default(),
+    )
         .await
         .unwrap_err();
 
