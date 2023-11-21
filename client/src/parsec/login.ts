@@ -146,7 +146,18 @@ export async function listOwnDevices(): Promise<Result<Array<OwnDeviceInfo>, Cli
           createdBy: 'device1',
           isCurrent: false,
         },
+        {
+          id: 'device3',
+          deviceLabel: 'My Recovered Device',
+          createdOn: DateTime.now(),
+          createdBy: 'device1',
+          isCurrent: false,
+        },
       ],
     };
   }
+}
+
+export async function hasRecoveryDevice(deviceInfo: OwnDeviceInfo): Promise<boolean> {
+  return deviceInfo.deviceLabel === 'My Recovered Device';
 }

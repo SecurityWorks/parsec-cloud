@@ -25,13 +25,11 @@ describe('Display export recovery device page', () => {
     cy.get('.password-input-modal').find('.footer-md').find('#next-button').as('okButton').contains('Validate');
     cy.get('@okButton').should('have.class', 'button-disabled');
     cy.get('.password-input-modal').find('#ms-password-input').find('input').type('wr0ng.');
-    cy.get('@okButton').should('not.have.class', 'button-disabled');
-    cy.get('@okButton').click();
+    cy.get('@okButton').should('not.have.class', 'button-disabled').click();
     cy.checkToastMessage('Invalid password.');
     cy.get('.recovery-container').find('#exportDevice').contains('I understand').click();
     cy.get('.password-input-modal').find('#ms-password-input').find('input').type('P@ssw0rd.');
-    cy.get('@okButton').should('not.have.class', 'button-disabled');
-    cy.get('@okButton').click();
+    cy.get('@okButton').should('not.have.class', 'button-disabled').click();
     cy.get('.recovery-container').find('#return-button').should('not.be.visible');
     cy.get('.recovery-container').find('.block').as('blocks').should('have.length', 2);
     cy.get('@blocks').eq(0).as('thirdBlock').contains('Recovery File');
