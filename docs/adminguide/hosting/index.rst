@@ -299,7 +299,7 @@ Installation
 Start the server
 ----------------
 
-1. Create a wrapper script ``parsec-server-wrapper``
+1. Create a wrapper script ``run-parsec-server``
 
   .. code-block:: bash
 
@@ -320,12 +320,12 @@ Start the server
     # Start the parsec server.
     python -m parsec.cli backend run
 
-2. Execute the wrapper script ``parsec-server-wrapper``
+2. Execute the wrapper script ``run-parsec-server``
 
   .. note::
 
-    To run the wrapper with only ``parsec-server-wrapper`` you need to have set the executable mode on the script file (``chmod +x parsec-server-wrapper``).
-    Otherwise, you need to execute it with the ``bash`` shell (``bash parsec-server-wrapper``).
+    To run the wrapper with only ``run-parsec-server`` you need to have set the executable mode on the script file (``chmod +x run-parsec-server``).
+    Otherwise, you need to execute it with the ``bash`` shell (``bash run-parsec-server``).
 
 
 Start using Parsec server
