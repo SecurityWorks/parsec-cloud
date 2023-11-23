@@ -310,9 +310,11 @@ Start the server
 
     # Load the env file into the environment table.
     set -a
-    for env_file in parsec-admin-token.env parsec-db.env parsec-smtp.env parsec-s3.env parsec.env; do
-      source $env_file
-    done
+    source parsec-admin-token.env
+    source parsec-db.env
+    source parsec-smtp.env
+    source parsec-s3.env
+    source parsec.env
     set +a
 
     # Start the parsec server.
