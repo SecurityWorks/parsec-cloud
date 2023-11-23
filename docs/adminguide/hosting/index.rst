@@ -247,7 +247,7 @@ You can then check if the email is present in the web interface at http://127.0.
 On Bare Metal
 =============
 
-If you do want to install the parsec server through docker, you can install it bare metal.
+If you don't want to install Parsec server via Docker, you can install it on bare metal.
 
 Requirements
 ------------
