@@ -5,6 +5,43 @@ History
 .. towncrier release notes start
 
 
+Parsec v3.1.1-a.0.dev.20028+bbbf7d5 (2024-11-01)
+------------------------------------------------
+
+Features
+~~~~~~~~
+
+* Add CLI command ``tos list`` to list the Terms of Service of an organization.
+  (`#8773 <https://github.com/Scille/parsec-cloud/issues/8773>`__)
+
+* Add CLI Command to configure TOS for an organization
+  (`#8778 <https://github.com/Scille/parsec-cloud/issues/8778>`__)
+
+* Add CLI command ``tos accept`` to accept TOS of an organization
+  (`#8782 <https://github.com/Scille/parsec-cloud/issues/8782>`__)
+
+
+Bugfixes
+~~~~~~~~
+
+* Improve snap packaging to prevent some user applications to crash when trying
+  to open a file from the parsec app.
+  (`#8737 <https://github.com/Scille/parsec-cloud/issues/8737>`__)
+
+* Fixed a bug causing the user to access unintended steps of the organization
+  creation when creating it from a bootstrap link
+  (`#8771 <https://github.com/Scille/parsec-cloud/issues/8771>`__)
+
+
+Miscellaneous internal changes
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+* Added an explanation tooltip for the server synchronization status in the file
+  details
+  (`#8725 <https://github.com/Scille/parsec-cloud/issues/8725>`__)
+
+
+
 Parsec v3.1.0 (2024-10-15)
 --------------------------
 
