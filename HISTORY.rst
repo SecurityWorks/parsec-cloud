@@ -5,6 +5,45 @@ History
 .. towncrier release notes start
 
 
+Parsec v3.2.1-a.0.dev.20066+d5884df (2024-12-09)
+------------------------------------------------
+
+Features
+~~~~~~~~
+
+* Allows overwriting default config & data directory during CLI command ``invite
+  claim``
+  (`#8937 <https://github.com/Scille/parsec-cloud/issues/8937>`__)
+
+* Added a search input for the organization user list
+  (`#8964 <https://github.com/Scille/parsec-cloud/issues/8964>`__)
+
+* Display suspended users
+  (`#8694 <https://github.com/Scille/parsec-cloud/issues/8694>`__)
+
+* Remember sort and filter options on user list
+  (`#8969 <https://github.com/Scille/parsec-cloud/issues/8969>`__)
+
+* Added a batch workspace sharing option to assign a chosen workspace role to
+  several organization members at once.
+  (`#8326 <https://github.com/Scille/parsec-cloud/issues/8326>`__)
+
+
+Bugfixes
+~~~~~~~~
+
+* Fixed a few visual and functional bugs with the sidebar
+  (`#8851 <https://github.com/Scille/parsec-cloud/issues/8851>`__)
+
+* Fix GUI sometime not updating folder view when new file/folder is being
+  remotely added.
+  (`#9102 <https://github.com/Scille/parsec-cloud/issues/9102>`__)
+
+* Fixed the file list not being properly updated after copying a file
+  (`#8970 <https://github.com/Scille/parsec-cloud/issues/8970>`__)
+
+
+
 Parsec v3.2.0 (2024-11-22)
 --------------------------
 
