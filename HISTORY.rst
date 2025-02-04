@@ -4,6 +4,119 @@ History
 .. towncrier release notes start
 
 
+Parsec v3.2.5-a.0.dev.20123+2fbf772 (2025-02-04)
+------------------------------------------------
+
+Features
+~~~~~~~~
+
+* Show/hide submenu (recent files, workspaces, favorite workspaces) on sidebar
+  (`#9088 <https://github.com/Scille/parsec-cloud/issues/9088>`__)
+
+* Port the shared recovery feature (based on the Shamir algorithm) and expose it
+  through the CLI.
+  (`#6090 <https://github.com/Scille/parsec-cloud/issues/6090>`__)
+
+* Rename the option ``--organization-id`` to ``--organization`` in the CLI
+  command ``organization stats``
+  (`#9191 <https://github.com/Scille/parsec-cloud/issues/9191>`__)
+
+* Remember sort and filter options on user list
+  (`#8969 <https://github.com/Scille/parsec-cloud/issues/8969>`__)
+
+* The CLI command ``user revoke`` now take the email as an argument instead of
+  an option
+  (`#9193 <https://github.com/Scille/parsec-cloud/issues/9193>`__)
+
+* Display the user role on a workspace in grid mode and while viewing files
+  (`#9174 <https://github.com/Scille/parsec-cloud/issues/9174>`__)
+
+* Added a `See in explorer` option for files and folders
+  (`#8961 <https://github.com/Scille/parsec-cloud/issues/8961>`__)
+
+* Rename the option ``--organization-id`` to ``--organization`` in the CLI
+  command ``organization status``
+  (`#9192 <https://github.com/Scille/parsec-cloud/issues/9192>`__)
+
+* Added a batch workspace sharing option to assign a chosen workspace role to
+  several organization members at once.
+  (`#8326 <https://github.com/Scille/parsec-cloud/issues/8326>`__)
+
+* The CLI command ``invite cancel`` now take the token as an argument instead of
+  an option
+  (`#9188 <https://github.com/Scille/parsec-cloud/issues/9188>`__)
+
+* Display suspended users
+  (`#8694 <https://github.com/Scille/parsec-cloud/issues/8694>`__)
+
+* Pass workspace name as an argument instead of an option to the CLI command
+  ``workspace create``
+  (`#9119 <https://github.com/Scille/parsec-cloud/issues/9119>`__)
+
+* Invitation token is now passed as an argument instead of an option the CLI
+  command ``invite greet``
+  (`#9118 <https://github.com/Scille/parsec-cloud/issues/9118>`__)
+
+* The CLI command ``invite user`` now take the email as an argument instead of
+  an option
+  (`#9190 <https://github.com/Scille/parsec-cloud/issues/9190>`__)
+
+* Added a search input for the organization user list
+  (`#8964 <https://github.com/Scille/parsec-cloud/issues/8964>`__)
+
+* The parsec invitation is now passed as an argument instead of an option in the
+  CLI command ``invite claim``
+  (`#9117 <https://github.com/Scille/parsec-cloud/issues/9117>`__)
+
+* Displays the technical identifiers of users, devices and files
+  (`#9299 <https://github.com/Scille/parsec-cloud/issues/9299>`__)
+
+* Add CLI command ``user revoke`` to revoke a user
+  (`#9143 <https://github.com/Scille/parsec-cloud/issues/9143>`__)
+
+
+Bugfixes
+~~~~~~~~
+
+* Fixed a rare bug that could occur when switching organizations
+  (`#9287 <https://github.com/Scille/parsec-cloud/issues/9287>`__)
+
+* Stop spinners with check mark.
+  (`#9109 <https://github.com/Scille/parsec-cloud/issues/9109>`__)
+
+* Fix crash when reading a Parsec URL containing tab or newline characters in
+  the scheme part.
+  (`#9316 <https://github.com/Scille/parsec-cloud/issues/9316>`__)
+
+* Ensure that the mountpoint folder exists before adding a link to it in the
+  sidebar
+  (`#8820 <https://github.com/Scille/parsec-cloud/issues/8820>`__)
+
+* Fix file changed timestamp (ctime) on Unix systems
+  (`#8942 <https://github.com/Scille/parsec-cloud/issues/8942>`__)
+
+* Properly formats the amount of money due when displaying invoices
+  (`#9284 <https://github.com/Scille/parsec-cloud/issues/9284>`__)
+
+* Fixed a few visual and functional bugs with the sidebar
+  (`#8851 <https://github.com/Scille/parsec-cloud/issues/8851>`__)
+
+* Fix handling of files containing a tilde in their name in the Windows file
+  explorer
+  (`#9171 <https://github.com/Scille/parsec-cloud/issues/9171>`__)
+
+* Fix GUI sometime not updating folder view when new file/folder is being
+  remotely added.
+  (`#9102 <https://github.com/Scille/parsec-cloud/issues/9102>`__)
+
+* Fixes a bug when trying to greet a new device while offline
+  (`#9298 <https://github.com/Scille/parsec-cloud/issues/9298>`__)
+
+* Fixed the file list not being properly updated after copying a file
+  (`#8970 <https://github.com/Scille/parsec-cloud/issues/8970>`__)
+
+
+
 Parsec v3.2.4 (2025-01-21)
 --------------------------
 
