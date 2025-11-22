@@ -4,6 +4,26 @@ History
 .. towncrier release notes start
 
 
+Parsec v3.6.2-a.0.dev.20414+42f2d95 (2025-11-22)
+------------------------------------------------
+
+Features
+~~~~~~~~
+
+* Update component library (megashark-lib) and show/hide action bar buttons
+  based on the screen size
+  (`#11391 <https://github.com/Scille/parsec-cloud/issues/11391>`__)
+
+
+Bugfixes
+~~~~~~~~
+
+* Fixed an issue where a folder could be open twice and prevent further
+  navigation
+  (`#11640 <https://github.com/Scille/parsec-cloud/issues/11640>`__)
+
+
+
 Parsec v3.6.1 (2025-11-14)
 --------------------------
 
